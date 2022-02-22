@@ -63,12 +63,12 @@ def create_app():
         db.session.add(user)
         db.session.commit()
 
-    #def get_roles(cur_user):
-    #    roles_list = cur_user.roles
-    #    user_roles = []
-    #    for role in roles_list:
-    #        user_roles.append(db.session.query(Role.name).filter_by(id=role.id).first())
-    #    return user_roles
+    def get_roles(cur_user):
+        roles_list = cur_user.roles
+        user_roles = []
+        for role in roles_list:
+            user_roles.append(Role.query.filter_by(id=role.id).first().name)
+        return user_roles
 
 
     @app.route('/', methods=['GET', 'POST'])
@@ -94,16 +94,16 @@ def create_app():
     def member_page():
         return render_template('index.html',
                                title="Welcome!",
-                               page_type="Members page")
-                               #user_roles=get_roles(current_user))
+                               page_type="Members page",
+                               user_roles=get_roles(current_user))
 
     @app.route('/admin')
     @roles_required('Admin')
     def admin_page():
         return render_template('index.html',
                                title="Welcome!",
-                               page_type="Admin page")
-                               #user_roles=get_roles(current_user))
+                               page_type="Admin page",
+                               user_roles=get_roles(current_user))
 
     return app
 

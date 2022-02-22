@@ -7,7 +7,7 @@
     <p><a href="{{ url_for('member_page') }}">{% trans %}Member Page{% endtrans %}</a> (login_required: member@example.com / Password1)</p>
     <p><a href="{{ url_for('admin_page') }}">{% trans %}Admin Page{% endtrans %}</a> (role_required: admin@example.com / Password1')</p>
     <p><a href="{{ url_for('user.logout') }}">{% trans %}Sign out{% endtrans %}</a></p>
-
+    <p>Статус: {% for role in user_roles %}{{ role }}{% endfor %}</p>
     <form method="GET">
         <p><label for="doc_id">Id: </label>
         <input type="text" id="doc_id" name="doc_id"></p>
