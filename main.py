@@ -70,9 +70,7 @@ def create_app():
             user_roles.append(Role.query.filter_by(id=role.id).first().name)
         return user_roles
 
-
-    @app.route('/', methods=['GET', 'POST'])
-    def index():
+    def get_text():
         doc = ''
         warning = ''
         if request.method == "GET":
@@ -83,27 +81,41 @@ def create_app():
                 if not doc:
                     warning = "Текста с id "+str(doc_id)+" нет в базе данных"
                     doc = ''
+        return doc, warning
+
+    @app.route('/', methods=['GET', 'POST'])
+    def index():
+        doc, warning = get_text()
         return render_template('index.html',
                                title="Welcome!",
                                page_type="Home page",
+                               curr_user=current_user,
                                warning=warning,
                                doc=doc)
 
     @app.route('/members')
     @login_required
     def member_page():
+        doc, warning = get_text()
         return render_template('index.html',
                                title="Welcome!",
                                page_type="Members page",
-                               user_roles=get_roles(current_user))
+                               curr_user=current_user,
+                               user_roles=get_roles(current_user),
+                               warning=warning,
+                               doc=doc)
 
     @app.route('/admin')
-    @roles_required('Admin')
+    @roles_required(['Admin'])
     def admin_page():
+        doc, warning = get_text()
         return render_template('index.html',
                                title="Welcome!",
                                page_type="Admin page",
-                               user_roles=get_roles(current_user))
+                               curr_user=current_user,
+                               user_roles=get_roles(current_user),
+                               warning=warning,
+                               doc=doc)
 
     return app
 
