@@ -28,16 +28,16 @@
         <!--<h2>{{ page_type }}</h2>-->
         <ul>
             <li><a href="{{ url_for('index') }}">Главная</a></li> <!--(accessible to anyone)-->
-            <li><a href="{{ url_for('member_page') }}">Для участников</a></li><!--(login_required: member@example.com / Password1)-->
+            <li><a href="{{ url_for('member_page') }}">Для участников</a></li><!--(login_required: member1/2@example.com / Password1)-->
             <li><a href="{{ url_for('admin_page') }}">Для админов</a></li> <!--(role_required: admin@example.com / Password1')-->
             {% if curr_user.is_authenticated %}
                 <li style="float:right"><a href="{{ url_for('user.logout') }}">Выйти</a></li>
-                {% else %}
+            {% else %}
                 <li style="float:right"><a href="{{ url_for('user.login') }}">Войти</a></li>
             {% endif %}
         </ul>
         {% if current_user.is_authenticated %}
-        <p align="right">Вы вошли как <b>{{ current_user.email }}</b></p>
+        <p align="right">Вы вошли как <b>{{ current_user.first_name }} {{ current_user.last_name }}</b></p>
         {% endif %}
 
         {% block content%}

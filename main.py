@@ -20,8 +20,8 @@ def create_app():
         email_confirmed_at = db.Column(db.DateTime())
         password = db.Column(db.String(255), nullable=False, server_default='')
 
-        login = db.Column(db.String(100), nullable=False, server_default='')
-        name = db.Column(db.String(200), nullable=False, server_default='')
+        first_name = db.Column(db.String(100), nullable=False, server_default='')
+        last_name = db.Column(db.String(100), nullable=False, server_default='')
 
         roles = db.relationship('Role', secondary='user_roles')
 
@@ -46,10 +46,23 @@ def create_app():
     user_manager = UserManager(app, db, User)
     db.create_all()
 
-    if not User.query.filter(User.email == 'member@example.com').first():
-        user = User(email='member@example.com',
+    if not User.query.filter(User.email == 'member1@example.com').first():
+        user = User(email='member1@example.com',
                     email_confirmed_at=datetime.datetime.utcnow(),
-                    password=user_manager.hash_password('Password1'),)
+                    password=user_manager.hash_password('Password1'),
+                    first_name="Василий",
+                    last_name="Иванов",)
+        user.roles.append(Role(name="Beginner_Researcher"))
+        db.session.add(user)
+        db.session.commit()
+
+    if not User.query.filter(User.email == 'member2@example.com').first():
+        user = User(email='member2@example.com',
+                    email_confirmed_at=datetime.datetime.utcnow(),
+                    password=user_manager.hash_password('Password1'),
+                    first_name="Иван",
+                    last_name="Васильев",)
+        user.roles.append(Role(name="Experienced_Researcher"))
         db.session.add(user)
         db.session.commit()
 
@@ -57,9 +70,10 @@ def create_app():
     if not User.query.filter(User.email == 'admin@example.com').first():
         user = User(email='admin@example.com',
                     email_confirmed_at=datetime.datetime.utcnow(),
-                    password=user_manager.hash_password('Password1'),)
+                    password=user_manager.hash_password('Password1'),
+                    first_name="Николай",
+                    last_name="Николаев",)
         user.roles.append(Role(name='Admin'))
-        user.roles.append(Role(name='Agent'))
         db.session.add(user)
         db.session.commit()
 
