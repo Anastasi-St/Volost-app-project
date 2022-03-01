@@ -2,16 +2,15 @@
 {% block content %}
 
     <!-- <p><a href="{{ url_for('user.register') }}">{% trans %}Register{% endtrans %}</a></p> -->
-    {% if curr_user.is_authenticated %}
+    <!--{% if curr_user.is_authenticated %}
         <p>Статус:
             {% if user_roles %}
-                <!--{% for role in user_roles %}{{ role }}{% endfor %}-->
                 {{ user_roles|join(', ') }}
             {% else %}
                 нет
             {% endif %}
         </p>
-    {% endif %}
+    {% endif %}-->
     <form method="GET">
         <p><label for="doc_id">Id: </label>
         <input type="text" id="doc_id" name="doc_id"></p>

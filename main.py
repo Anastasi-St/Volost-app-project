@@ -36,12 +36,96 @@ def create_app():
         user_id = db.Column(db.Integer(), db.ForeignKey('users.id', ondelete='CASCADE'))
         role_id = db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'))
 
+    class ReferenceBooks(db.Model):
+        __tablename__ = 'reference_books'
+        id =  db.Column(db.Integer(), primary_key=True)
+        ref_name = db.Column(db.String(255), nullable=False)
+        default = db.Column(db.Boolean(), server_default='1')
+
+    class RefBooksElements(db.Model):
+        __tablename__ = 'ref_books_elements'
+        id =  db.Column(db.Integer(), primary_key=True)
+        ref_book = db.Column(db.Integer, db.ForeignKey('reference_books.id'), nullable=False)
+        ref_value = db.Column(db.String(255), nullable=False)
+        ref_date = db.Column(db.DateTime(), nullable=False)
+
     class Documents(db.Model):
         __tablename__ = 'documents'
         id = db.Column(db.Integer(), primary_key=True)
         doc_name = db.Column(db.String(100), unique=True, nullable=False)
-        reg_date = db.Column(db.DateTime())
+        reg_date = db.Column(db.DateTime(), nullable=False)
         owner = db.Column(db.ForeignKey('users.id'), nullable=True)  #, ondelete='CASCADE'))
+        guberniya = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
+        uyezd  = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
+        volost = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
+        plaintiff_res_place = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
+        defendant_res_place = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
+        create_date = db.Column(db.DateTime(), nullable=True)
+        decision_date = db.Column(db.DateTime(), nullable=True)
+        wait_time = db.Column(db.Integer(), nullable=True) # вычислить!
+        dec_book_num = db.Column(db.Integer(), nullable=True)
+         #???
+        presence_plaintiff = db.Column(db.Boolean(), server_default='1', nullable=True)
+        presence_defendant = db.Column(db.Boolean(), server_default='1', nullable=True)
+        lawsuit_price = db.Column(db.Integer(), nullable=True)
+        court_result = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=True)
+         #???
+        compens = db.Column(db.Integer(), nullable=True)
+        appeal =  db.Column(db.Boolean(), nullable=True)
+        appeal_succ = db.Column(db.Boolean(), nullable=True)
+        appeal_date = db.Column(db.DateTime(), nullable=True)
+        ap_decision_date = db.Column(db.DateTime(), nullable=True)
+        ap_dec_time = db.Column(db.Integer(), nullable=True) # вычислить!
+        decision_exec_date = db.Column(db.DateTime(), nullable=True)
+        decision_exec_time = db.Column(db.Integer(), nullable=True) # вычислить!
+
+        theme = db.relationship('RefBooksElements', secondary='doc_themes')
+        court_punishment =  db.relationship('RefBooksElements', secondary='doc_court_punishments')
+        # doc_text
+
+    class DocThemes(db.Model):
+        __tablename__ = 'doc_themes'
+        id = db.Column(db.Integer(), primary_key=True)
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False) #, ondelete='CASCADE'))
+        theme_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'))  #, ondelete='CASCADE'))
+
+    class DocCourtPunishments(db.Model):
+        __tablename__ = 'doc_court_punishments'
+        id = db.Column(db.Integer(), primary_key=True)
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False) #, ondelete='CASCADE'))
+        court_punishment_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)  #, ondelete='CASCADE'))
+
+    class DocumentsFiles(db.Model):
+        __tablename__ = 'documents_files'
+        id = db.Column(db.Integer(), primary_key=True)
+        filename = db.Column(db.String(255), nullable=False)
+        load_date = db.Column(db.DateTime(), nullable=False)
+        document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        filetype = db.Column(db.String(100), nullable=False)
+
+    class ActivityLog(db.Model):
+        __tablename__ = 'activity_log'
+        id =  db.Column(db.Integer(), primary_key=True)
+        user = db.Column(db.Integer(), db.ForeignKey('users.id'), nullable=False)
+        datetime = db.Column(db.DateTime(), nullable=False)
+        document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        doc_type = db.Column(db.String(100), nullable=False) # переименовала!!
+
+    class Participants(db.Model):
+        __tablename__ = 'participants'
+        id =  db.Column(db.Integer(), primary_key=True)
+        id_doc = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        partic_type = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)
+        partic_kind = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)
+        partic_num = db.Column(db.Integer(), server_default='0')
+
+    class RefDocProperties(db.Model): # RELATIONS!
+        __tablename__ = 'ref_doc_properties'
+        id =  db.Column(db.Integer(), primary_key=True)
+        doc = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        ref_book = db.Column(db.Integer(), db.ForeignKey('reference_books.id'), nullable=False)
+        ref_element = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False) # переименовала!!
+
 
     user_manager = UserManager(app, db, User)
     db.create_all()
@@ -101,35 +185,45 @@ def create_app():
     def index():
         doc, warning = get_text()
         return render_template('index.html',
-                               title="Welcome!",
-                               page_type="Home page",
+                               title="Добро пожаловать!",
+                               #page_type="Главная",
                                curr_user=current_user,
                                warning=warning,
                                doc=doc)
 
-    @app.route('/members')
-    @login_required
-    def member_page():
-        doc, warning = get_text()
-        return render_template('index.html',
-                               title="Welcome!",
-                               page_type="Members page",
-                               curr_user=current_user,
-                               user_roles=get_roles(current_user),
-                               warning=warning,
-                               doc=doc)
+    @app.route('/research')
+    def research():
+        return render_template('research.html',
+                               title="Исследования")
 
-    @app.route('/admin')
-    @roles_required(['Admin'])
-    def admin_page():
-        doc, warning = get_text()
-        return render_template('index.html',
-                               title="Welcome!",
-                               page_type="Admin page",
-                               curr_user=current_user,
-                               user_roles=get_roles(current_user),
-                               warning=warning,
-                               doc=doc)
+    @app.route('/about_project')
+    def about_project():
+        return render_template('about_project.html',
+                               title="О проекте")
+
+    # @app.route('/members')
+    # @login_required
+    # def member_page():
+    #     doc, warning = get_text()
+    #     return render_template('index.html',
+    #                            title="Welcome!",
+    #                            page_type="Members page",
+    #                            curr_user=current_user,
+    #                            user_roles=get_roles(current_user),
+    #                            warning=warning,
+    #                            doc=doc)
+
+    # @app.route('/admin')
+    # @roles_required(['Admin'])
+    # def admin_page():
+    #     doc, warning = get_text()
+    #     return render_template('index.html',
+    #                            title="Welcome!",
+    #                            page_type="Admin page",
+    #                            curr_user=current_user,
+    #                            user_roles=get_roles(current_user),
+    #                            warning=warning,
+    #                            doc=doc)
 
     return app
 
