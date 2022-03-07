@@ -86,14 +86,14 @@ def create_app():
     class DocThemes(db.Model):
         __tablename__ = 'doc_themes'
         id = db.Column(db.Integer(), primary_key=True)
-        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False) #, ondelete='CASCADE'))
-        theme_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'))  #, ondelete='CASCADE'))
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
+        theme_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'))
 
     class DocCourtPunishments(db.Model):
         __tablename__ = 'doc_court_punishments'
         id = db.Column(db.Integer(), primary_key=True)
-        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False) #, ondelete='CASCADE'))
-        court_punishment_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)  #, ondelete='CASCADE'))
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
+        court_punishment_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'), nullable=False)
 
     class DocumentsFiles(db.Model):
         __tablename__ = 'documents_files'
@@ -161,13 +161,13 @@ def create_app():
         db.session.add(user)
         db.session.commit()
 
-    def add_themes_punishments():
-        doc = Documents(doc_name='test',
-                        reg_date=datetime.datetime.utcnow(),)
-        doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
-        doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
-        db.session.add(doc)
-        db.session.commit()
+    #def add_themes_punishments():
+    doc = Documents(doc_name='test',
+                    reg_date=datetime.datetime.utcnow(),)
+    doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
+    doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
+    db.session.add(doc)
+    db.session.commit()
 
 
     def get_roles(cur_user):
