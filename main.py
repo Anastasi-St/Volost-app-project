@@ -161,6 +161,15 @@ def create_app():
         db.session.add(user)
         db.session.commit()
 
+    def add_themes_punishments():
+        doc = Documents(doc_name='test',
+                        reg_date=datetime.datetime.utcnow(),)
+        doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
+        doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
+        db.session.add(doc)
+        db.session.commit()
+
+
     def get_roles(cur_user):
         roles_list = cur_user.roles
         user_roles = []
@@ -187,7 +196,6 @@ def create_app():
         return render_template('index.html',
                                title="Добро пожаловать!",
                                #page_type="Главная",
-                               curr_user=current_user,
                                warning=warning,
                                doc=doc)
 
@@ -208,7 +216,6 @@ def create_app():
     #     return render_template('index.html',
     #                            title="Welcome!",
     #                            page_type="Members page",
-    #                            curr_user=current_user,
     #                            user_roles=get_roles(current_user),
     #                            warning=warning,
     #                            doc=doc)
@@ -220,7 +227,6 @@ def create_app():
     #     return render_template('index.html',
     #                            title="Welcome!",
     #                            page_type="Admin page",
-    #                            curr_user=current_user,
     #                            user_roles=get_roles(current_user),
     #                            warning=warning,
     #                            doc=doc)

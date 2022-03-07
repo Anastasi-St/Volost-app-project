@@ -4,40 +4,38 @@
         <meta charset="UTF-8">
         <title>{{ title }}</title>
         <style>
-            ul {
-              list-style-type: none;
-              margin: 0;
-              padding: 0;
-              overflow: hidden;
-            }
 
-            li {
-              float: left;
-            }
-
-            li a {
-              display: block;
-              color: black;
-              text-align: center;
-              padding: 14px 16px;
-              text-decoration: none;
-            }
         </style>
     </head>
     <body>
-        <ul>
-            <li><a href="{{ url_for('index') }}">Документы</a></li> <!--(accessible to anyone)-->
-            <li><a href="{{ url_for('research') }}">Исследования</a></li><!--(login_required: member1/2@example.com / Password1)-->
-            <li><a href="{{ url_for('about_project') }}">О проекте</a></li> <!--(role_required: admin@example.com / Password1')-->
+        {% set nav_bar = [
+            ('index', 'Документы'),
+            ('research', 'Исследования'),
+            ('about_project', 'О проекте')]
+        -%}
+        {% set active_page = active_page|default('index') -%}
+        <ul class="nav_bar">
+            {% for href, caption in nav_bar %}
+            <li{% if href == active_page %} class = "active_page"{% endif %}>
+                <a href="{{ url_for(href) }}">{{ caption|e }}</a>
+            </li>
+            {% endfor %}
+            <!-- <li><a href="{{ url_for('index') }}">Документы</a></li> (accessible to anyone)
+            <li><a href="{{ url_for('research') }}">Исследования</a></li> (login_required: member1/2@example.com / Password1)
+            <li><a href="{{ url_for('about_project') }}">О проекте</a></li> (role_required: admin@example.com / Password1')-->
+        </ul>
+        <ul style="float:right">
             {% if current_user.is_authenticated %}
-                <li style="float:right">{% if current_user.is_authenticated %}
+                <li id="user_name">
+                    {% if current_user.is_authenticated %}
                     Вы вошли как <b>{{ current_user.first_name }} {{ current_user.last_name }}</b>
-                    {% endif %}<a href="{{ url_for('user.logout') }}">Выйти</a></li>
+                    {% endif %}
+                </li>
+                <li id="sign_in_out"><a href="{{ url_for('user.logout') }}">Выйти</a></li>
             {% else %}
-                <li style="float:right"><a href="{{ url_for('user.login') }}">Войти</a></li>
+                <li id="sign_in_out"><a href="{{ url_for('user.login') }}">Войти</a></li>
             {% endif %}
         </ul>
-
 
         {% block content%}
 

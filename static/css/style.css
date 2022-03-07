@@ -2,3 +2,44 @@ p {
     padding: 5px;
     margin: 5px;
 }
+
+h1 {
+    margin: 20px;
+}
+
+ul {
+    list-style-type: none;
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+
+li a, #user_name {
+    display: block;
+    color: black;
+    text-align: center;
+    border: 1px solid transparent;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover:not(li.active_page a) {
+    border: 1px solid grey;
+    border-radius: 5px;
+    background-color: #F7F7F7;
+}
+
+#sign_in_out a, .active_page {
+    display: inline-block;
+    border-radius: 5px;
+    background-color: #EAEAEA;
+}
+
+.nav_bar li {
+    width: 250px;
+}
