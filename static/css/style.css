@@ -1,10 +1,13 @@
-p {
+body {
+    margin: 20px;
+}
+p, h1, table {
     padding: 5px;
     margin: 5px;
 }
 
 h1 {
-    margin: 20px;
+    display: inline-block;
 }
 
 ul {
@@ -42,4 +45,12 @@ li a:hover:not(li.active_page a) {
 
 .nav_bar li {
     width: 250px;
+}
+
+td, th {
+    padding: 5px;
+}
+
+#back {
+    display: inline-block;
 }

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+    {% if doc %}
+        <p><a href="{{ url_for('index') }}">Документы</a> / <a href="#">{{ doc.doc_name }}</a></p>
+        <h1>{{ doc.doc_name }}</h1>
+        <p id="back"><a href="{{ url_for('index') }}">Назад</a></p>
+        <table border="1" style="border-collapse:collapse">
+            <tr>
+                <th>ID</th>
+                <th>Название документа</th>
+                <th>Дата регистрации</th>
+            </tr>
+            <tr>
+                <td>{{ doc.id }}</td>
+                <td>{{ doc.doc_name }}</td>
+                <td>{{ doc.reg_date }}</td>
+            </tr>
+
+        </table>
+    {% elif warning %}
+        <p>{{ warning }}</p>
+    {% endif %}
+
+{% endblock %}

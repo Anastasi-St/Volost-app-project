@@ -161,13 +161,13 @@ def create_app():
         db.session.add(user)
         db.session.commit()
 
-    #def add_themes_punishments():
-    doc = Documents(doc_name='test',
-                    reg_date=datetime.datetime.utcnow(),)
-    doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
-    doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
-    db.session.add(doc)
-    db.session.commit()
+    def add_themes_punishments():
+        doc = Documents(doc_name='test',
+                        reg_date=datetime.datetime.utcnow(),)
+        doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
+        doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
+        db.session.add(doc)
+        db.session.commit()
 
 
     def get_roles(cur_user):
@@ -198,6 +198,20 @@ def create_app():
                                #page_type="Главная",
                                warning=warning,
                                doc=doc)
+
+    @app.route('/<int:id>')
+    def doc_page(id):
+        warning = ''
+        doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            warning = "Документа с ID "+str(id)+" нет в базе данных"
+            title = "Документ не найден"
+        else:
+            title = doc.doc_name
+        return render_template('doc_page.html',
+                               doc=doc,
+                               title=title,
+                               warning=warning)
 
     @app.route('/research')
     def research():
