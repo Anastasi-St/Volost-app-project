@@ -12,9 +12,9 @@
                 <th>Дата регистрации</th>
             </tr>
             <tr>
-                <td>{{ doc.id }}</td>
-                <td>{{ doc.doc_name }}</td>
-                <td>{{ doc.reg_date }}</td>
+                {% for column in fields %}
+                <td>{{ doc.column }}</td>
+                {% endfor %}
             </tr>
 
         </table>

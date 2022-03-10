@@ -40,7 +40,7 @@ def create_app():
         __tablename__ = 'reference_books'
         id =  db.Column(db.Integer(), primary_key=True)
         ref_name = db.Column(db.String(255), nullable=False)
-        default = db.Column(db.Boolean(), server_default='1')
+        ref_default = db.Column(db.Boolean(), server_default='1')
 
     class RefBooksElements(db.Model):
         __tablename__ = 'ref_books_elements'
@@ -52,7 +52,7 @@ def create_app():
     class Documents(db.Model):
         __tablename__ = 'documents'
         id = db.Column(db.Integer(), primary_key=True)
-        doc_name = db.Column(db.String(100), unique=True, nullable=False)
+        doc_name = db.Column(db.String(500), unique=True, nullable=False)
         reg_date = db.Column(db.DateTime(), nullable=False)
         owner = db.Column(db.ForeignKey('users.id'), nullable=True)  #, ondelete='CASCADE'))
         guberniya = db.Column(db.ForeignKey('ref_books_elements.id'), nullable=True)
@@ -79,9 +79,12 @@ def create_app():
         decision_exec_date = db.Column(db.DateTime(), nullable=True)
         decision_exec_time = db.Column(db.Integer(), nullable=True) # вычислить!
 
+        doc_text = db.Column(db.Text(), nullable=True)
+        img_names = db.Column(db.String(100), nullable=True)
+
         theme = db.relationship('RefBooksElements', secondary='doc_themes')
         court_punishment =  db.relationship('RefBooksElements', secondary='doc_court_punishments')
-        # doc_text
+        ref_doc_properties = db.relationship('RefBooksElements', secondary='ref_doc_properties')
 
     class DocThemes(db.Model):
         __tablename__ = 'doc_themes'
@@ -123,8 +126,8 @@ def create_app():
         __tablename__ = 'ref_doc_properties'
         id =  db.Column(db.Integer(), primary_key=True)
         doc = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
-        ref_book = db.Column(db.Integer(), db.ForeignKey('reference_books.id'), nullable=False)
         ref_element = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False) # переименовала!!
+        #ref_book = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.ref_book'), nullable=False)
 
 
     user_manager = UserManager(app, db, User)
@@ -203,6 +206,7 @@ def create_app():
     def doc_page(id):
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
+        fields = Documents.__table__.columns.keys()
         if not doc:
             warning = "Документа с ID "+str(id)+" нет в базе данных"
             title = "Документ не найден"
@@ -211,6 +215,7 @@ def create_app():
         return render_template('doc_page.html',
                                doc=doc,
                                title=title,
+                               fields=fields,
                                warning=warning)
 
     @app.route('/research')
