@@ -20,8 +20,11 @@
         </p>
 
         <hr>
-
-        {{ doc_dict['doc_text']|safe }}
+        {% if doc_dict['doc_text'] %}
+            {{ doc_dict['doc_text']|safe }}
+        {% else %}
+            <h3>Тескт документа не указан</h3>
+        {% endif %}
     {% elif warning %}
         <p>{{ warning }}</p>
     {% endif %}

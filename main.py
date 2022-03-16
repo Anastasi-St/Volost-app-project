@@ -3,7 +3,7 @@ from config import Config
 import datetime
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import select
+from sqlalchemy.orm import aliased
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
 
@@ -208,16 +208,54 @@ def create_app():
 
 
     def get_all_docs():
-        docs = select([Documents.doc_name, RefBooksElements.ref_value])\
-            .select_from(DocThemes
-                         .join(RefBooksElements, DocThemes.theme_id == RefBooksElements.id)
-                         .join(Documents, DocThemes.doc_id == Documents.id))
-        return docs
+        plaintiff_res = aliased(RefBooksElements)
+        defendant_res = aliased(RefBooksElements)
+        guberniya = aliased(RefBooksElements)
+        uyezd = aliased(RefBooksElements)
+        volost = aliased(RefBooksElements)
+        court_result = aliased(RefBooksElements)
+        docs_test = Documents.query.with_entities(Documents.id,
+                                                  Documents.doc_name,
+                                                  Documents.reg_date,
+                                                  plaintiff_res.ref_value.label('plaintiff_res_place'),
+                                                  defendant_res.ref_value.label('defendant_res_place'),
+                                                  guberniya.ref_value.label('guberniya'),
+                                                  uyezd.ref_value.label('uyezd'),
+                                                  volost.ref_value.label('volost'),
+                                                  Documents.create_date,
+                                                  Documents.decision_date,
+                                                  Documents.wait_time,
+                                                  Documents.dec_book_num,
+                                                  Documents.presence_plaintiff,
+                                                  Documents.presence_defendant,
+                                                  Documents.lawsuit_price,
+                                                  court_result.ref_value.label('court_result'),
+                                                  Documents.compens,
+                                                  Documents.appeal,
+                                                  Documents.appeal_succ,
+                                                  Documents.appeal_date,
+                                                  Documents.ap_decision_date,
+                                                  Documents.ap_dec_time,
+                                                  Documents.decision_exec_date,
+                                                  Documents.decision_exec_time)\
+            .join(guberniya, guberniya.id == Documents.guberniya, isouter=True)\
+            .join(uyezd, uyezd.id == Documents.uyezd, isouter=True)\
+            .join(volost, volost.id == Documents.volost, isouter=True)\
+            .join(plaintiff_res, plaintiff_res.id == Documents.plaintiff_res_place, isouter=True)\
+            .join(defendant_res, defendant_res.id == Documents.defendant_res_place, isouter=True)\
+            .join(court_result, court_result.id == Documents.court_result).all()
+        docs = RefBooksElements.query.with_entities(Documents.doc_name, RefBooksElements.ref_value)\
+                         .join(DocThemes, DocThemes.theme_id == RefBooksElements.id)\
+                         .join(Documents, DocThemes.doc_id == Documents.id).all()
+        return docs_test
+
 
     @app.route('/') # methods=['GET', 'POST'])
     def index():
-        docs = Documents.query.all()
-        docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
+        #docs = Documents.query.all()
+        docs = get_all_docs()
+        #docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
+        docs_list = [dict((col, getattr(doc, col)) for col in list(doc.keys())) for doc in docs]
         return render_template('index.html',
                                title="Добро пожаловать!",
                                column_dict=column_dict,

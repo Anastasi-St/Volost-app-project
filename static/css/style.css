@@ -49,6 +49,7 @@ li a:hover:not(li.active_page a) {
 
 td, th {
     padding: 5px;
+    text-align: center;
 }
 
 #back {
