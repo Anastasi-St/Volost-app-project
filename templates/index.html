@@ -12,27 +12,33 @@
             {% endif %}
         </p>
     {% endif %}-->
-    <form method="GET">
+    <!--<form method="GET">
         <p><label for="doc_id">ID: </label>
         <input type="text" id="doc_id" name="doc_id"></p>
         <p><input type="submit" value="Искать"></p>
-    </form>
-    {% if doc %}
-        <table border="1" style="border-collapse:collapse">
-            <tr>
-                <th>ID</th>
-                <th>Название документа</th>
-                <th>Дата регистрации</th>
-            </tr>
-            <tr>
-                <td>{{ doc.id }}</td>
-                <td>{{ doc.doc_name }}</td>
-                <td>{{ doc.reg_date }}</td>
-            </tr>
-
-        </table>
-    {% elif warning %}
-        <p>{{ warning }}</p>
-    {% endif %}
+    </form>-->
+    <table border="1" style="border-collapse:collapse">
+        <tr>
+            <th>Название документа</th>
+            {% for col in column_dict.values() %}
+            <th>{{ col }}</th>
+            {% endfor %}
+        </tr>
+        {% for doc in docs_list %}
+        <tr>
+            <td><a href="/{{ doc['id'] }}">{{ doc['doc_name'] }}</a></td>
+            {% for value in column_dict.keys() %}
+            <td>{% if doc[value] == None or doc[value] == False %}
+                -
+                {% elif doc[value] == True %}
+                &#10004;
+                {% else %}
+                {{ doc[value] }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
 
 {% endblock %}

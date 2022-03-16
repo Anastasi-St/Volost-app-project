@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 
-    {% if doc %}
-        <p><a href="{{ url_for('index') }}">Документы</a> / <a href="#">{{ doc.doc_name }}</a></p>
-        <h1>{{ doc.doc_name }}</h1>
+    {% if doc_dict %}
+        <p><a href="{{ url_for('index') }}">Документы</a> / <a href="#">{{ doc_dict['doc_name'] }}</a></p>
+        <h2>{{ doc_dict['doc_name'] }}</h2>
         <p id="back"><a href="{{ url_for('index') }}">Назад</a></p>
-        <table border="1" style="border-collapse:collapse">
-            <tr>
-                <th>ID</th>
-                <th>Название документа</th>
-                <th>Дата регистрации</th>
-            </tr>
-            <tr>
-                {% for column in fields %}
-                <td>{{ doc.column }}</td>
-                {% endfor %}
-            </tr>
 
-        </table>
+        <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
+                                        {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}
+                                    {% else %}
+                                        Не указано
+                                    {% endif %}
+        </p>
+        <p><b>Дата вынесения решения</b>: {% if doc_dict['decision_date'] %}
+                                        {{ doc_dict['decision_date'].strftime('%d.%m.%Y') }}
+                                    {% else %}
+                                        Не указано
+                                    {% endif %}
+        </p>
+
+        <hr>
+
+        {{ doc_dict['doc_text']|safe }}
     {% elif warning %}
         <p>{{ warning }}</p>
     {% endif %}

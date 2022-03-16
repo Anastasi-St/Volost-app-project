@@ -1,12 +1,12 @@
 body {
     margin: 20px;
 }
-p, h1, table {
+p, h2, h3, table {
     padding: 5px;
     margin: 5px;
 }
 
-h1 {
+h2, h3 {
     display: inline-block;
 }
 

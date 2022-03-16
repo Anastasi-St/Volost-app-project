@@ -3,7 +3,9 @@ from config import Config
 import datetime
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import select
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
+import itertools
 
 def create_app():
     app = Flask(__name__)
@@ -193,29 +195,51 @@ def create_app():
                     doc = ''
         return doc, warning
 
-    @app.route('/', methods=['GET', 'POST'])
+    th_names = ['Дата регистрации документа в базе данных', 'Губерния', 'Уезд', 'Волость',
+                'Место жительства истца', 'Место жительства ответчика', 'Дата подачи заявления', 'Дата вынесения решения',
+                'Время ожидания', 'Номер по книге решений суда', 'Присутствие истца', 'Присутствие ответчика',
+                'Цена предъявленного иска в рублях', 'Результат суда', 'Сумма присуждённого возмещения в рублях',
+                'Обжаловано', 'Обжалование успешно', 'Дата подачи апелляции', 'Дата решения по апелляции',
+                'Время ожидания решения апелляции', 'Дата исполнения решения', 'Время ожидания решения']
+    not_displayed = ['id', 'doc_name', 'owner', 'doc_text', 'img_names']
+    column_names = [x for x in Documents.__table__.columns.keys() if x not in not_displayed]
+    column_dict = dict(zip(column_names, th_names))
+    #print(column_dict)
+
+
+    def get_all_docs():
+        docs = select([Documents.doc_name, RefBooksElements.ref_value])\
+            .select_from(DocThemes
+                         .join(RefBooksElements, DocThemes.theme_id == RefBooksElements.id)
+                         .join(Documents, DocThemes.doc_id == Documents.id))
+        return docs
+
+    @app.route('/') # methods=['GET', 'POST'])
     def index():
-        doc, warning = get_text()
+        docs = Documents.query.all()
+        docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
         return render_template('index.html',
                                title="Добро пожаловать!",
-                               #page_type="Главная",
-                               warning=warning,
-                               doc=doc)
+                               column_dict=column_dict,
+                               docs_list=docs_list)
 
     @app.route('/<int:id>')
     def doc_page(id):
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
-        fields = Documents.__table__.columns.keys()
-        if not doc:
+        #doc = Documents.query.all()
+        if doc:
+            doc_dict = dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys())
+            doc_dict = dict(itertools.islice(doc_dict.items(), 1, 26))
+            title = doc.doc_name
+        else:
             warning = "Документа с ID "+str(id)+" нет в базе данных"
             title = "Документ не найден"
-        else:
-            title = doc.doc_name
+            doc_dict = {}
+
         return render_template('doc_page.html',
-                               doc=doc,
+                               doc_dict=doc_dict,
                                title=title,
-                               fields=fields,
                                warning=warning)
 
     @app.route('/research')
