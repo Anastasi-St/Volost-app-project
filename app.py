@@ -4,6 +4,7 @@ import datetime
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
+from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
 
@@ -197,12 +198,16 @@ def create_app():
 
     th_names = ['Дата регистрации документа в базе данных', 'Губерния', 'Уезд', 'Волость',
                 'Место жительства истца', 'Место жительства ответчика', 'Дата подачи заявления', 'Дата вынесения решения',
-                'Время ожидания', 'Номер по книге решений суда', 'Присутствие истца', 'Присутствие ответчика',
-                'Цена предъявленного иска в рублях', 'Результат суда', 'Сумма присуждённого возмещения в рублях',
+                'Время ожидания', 'Темы',
+                'Номер по книге решений суда', 'Присутствие истца', 'Присутствие ответчика',
+                'Цена предъявленного иска в рублях', 'Результат суда', 'Наказания по суду',
+                'Сумма присуждённого возмещения в рублях',
                 'Обжаловано', 'Обжалование успешно', 'Дата подачи апелляции', 'Дата решения по апелляции',
                 'Время ожидания решения апелляции', 'Дата исполнения решения', 'Время ожидания решения']
     not_displayed = ['id', 'doc_name', 'owner', 'doc_text', 'img_names']
     column_names = [x for x in Documents.__table__.columns.keys() if x not in not_displayed]
+    column_names.insert(column_names.index('dec_book_num'), 'themes')
+    column_names.insert(column_names.index('compens'), 'court_punishments')
     column_dict = dict(zip(column_names, th_names))
     #print(column_dict)
 
@@ -214,6 +219,7 @@ def create_app():
         uyezd = aliased(RefBooksElements)
         volost = aliased(RefBooksElements)
         court_result = aliased(RefBooksElements)
+        themes = aliased(RefBooksElements)
         docs_test = Documents.query.with_entities(Documents.id,
                                                   Documents.doc_name,
                                                   Documents.reg_date,
@@ -243,23 +249,72 @@ def create_app():
             .join(volost, volost.id == Documents.volost, isouter=True)\
             .join(plaintiff_res, plaintiff_res.id == Documents.plaintiff_res_place, isouter=True)\
             .join(defendant_res, defendant_res.id == Documents.defendant_res_place, isouter=True)\
-            .join(court_result, court_result.id == Documents.court_result).all()
-        docs = RefBooksElements.query.with_entities(Documents.doc_name, RefBooksElements.ref_value)\
+            .join(court_result, court_result.id == Documents.court_result, isouter=True)\
+            .all()
+            #.join(DocThemes, isouter=True)\
+            #.join(themes, isouter=True)\
+            #.all()
+            #.join(DocThemes, DocThemes.doc_id == Documents.id)\
+            #.join(themes)\
+            #.all()
+
+        docs_themes = RefBooksElements.query.with_entities(Documents.id, RefBooksElements.ref_value)\
                          .join(DocThemes, DocThemes.theme_id == RefBooksElements.id)\
                          .join(Documents, DocThemes.doc_id == Documents.id).all()
-        return docs_test
+
+        docs_punishments = RefBooksElements.query.with_entities(Documents.id, RefBooksElements.ref_value) \
+                        .join(DocCourtPunishments, DocCourtPunishments.court_punishment_id == RefBooksElements.id) \
+                        .join(Documents, DocCourtPunishments.doc_id == Documents.id).all()
+
+        return docs_test, docs_themes, docs_punishments
+
+
+    def get_themes_puns():
+        docs, docs_th, docs_p = get_all_docs()
+        ids = [doc['id'] for doc in docs]
+        def get_lists(d, name):
+            new_d = {}
+            new_l = []
+            for doc in d:
+                if doc['id'] not in new_d:
+                    new_d[doc['id']] = []
+                new_d[doc['id']].append(doc['ref_value'])
+            new_dd = {}
+            for id in ids:
+                if id in new_d.keys():
+                    new_dd[id] = new_d[id]
+                else:
+                    new_dd[id] = []
+            for id, val in zip(new_dd.keys(), new_dd.values()):
+                new_l.append({'id': id, name: ', '.join(val)})
+            return new_l
+
+        theme_dicts = get_lists(docs_th, 'themes')
+        puns_dicts = get_lists(docs_p, 'court_punishments')
+
+        return theme_dicts, puns_dicts
+
+    def query_to_dict(query_res):
+        return [dict((col, getattr(obj, col)) for col in list(obj.keys())) for obj in query_res]
 
 
     @app.route('/') # methods=['GET', 'POST'])
     def index():
         #docs = Documents.query.all()
-        docs = get_all_docs()
+        docs, docs_themes, docs_punishments = get_all_docs()
         #docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
-        docs_list = [dict((col, getattr(doc, col)) for col in list(doc.keys())) for doc in docs]
+        docs_list = query_to_dict(docs)
+        docs_themes, docs_punishments = get_themes_puns()
+        #print(docs_punishments)
+        for i in range(len(docs_themes)):
+            docs_list[i].update(docs_themes[i])
+            docs_list[i].update(docs_punishments[i])
+        #print(docs_list)
         return render_template('index.html',
                                title="Добро пожаловать!",
                                column_dict=column_dict,
-                               docs_list=docs_list)
+                               docs_list=docs_list,
+                               docs_themes=docs_themes)
 
     @app.route('/<int:id>')
     def doc_page(id):

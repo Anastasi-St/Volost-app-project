@@ -17,10 +17,19 @@
         <input type="text" id="doc_id" name="doc_id"></p>
         <p><input type="submit" value="Искать"></p>
     </form>-->
-    <!--{% for doc in docs_test %}
-        <p>Название документа: {{ doc.doc_name }}</p>
-        <p>Тема: {{ doc.ref_value }}</p>
-    {% endfor %}-->
+    <!--<table border="1" style="border-collapse:collapse">
+        <tr>
+            <th>id дока</th>
+            <th>тема</th>
+        </tr>
+        {% for doc in docs_themes %}
+            <tr>
+                <td>{{ doc['id'] }}</td>
+                <td>{{ doc['themes']|join(', ') }}</td>
+            </tr>
+        {% endfor %}
+    </table>-->
+
     <table border="1" style="border-collapse:collapse">
         <tr>
             <th>Название документа</th>
@@ -32,7 +41,7 @@
         <tr>
             <td><a href="/{{ doc['id'] }}">{{ doc['doc_name'] }}</a></td>
             {% for value in column_dict.keys() %}
-            <td>{% if doc[value] == None or doc[value] == False %}
+            <td>{% if not doc[value] %}
                 <b>—</b>
                 {% elif doc[value] == True %}
                 &#10004;
