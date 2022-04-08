@@ -2,9 +2,19 @@
 {% block content %}
 
     {% if doc_dict %}
-        <p><a href="{{ url_for('index') }}">Документы</a> / <a href="#">{{ doc_dict['doc_name'] }}</a></p>
-        <h2>{{ doc_dict['doc_name'] }}</h2>
-        <p id="back"><a href="{{ url_for('index') }}">Назад</a></p>
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('index') }}">Документы</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">{{ doc_dict['doc_name'] }}</a>
+            </li>
+        </ul>
+
+        <div class="d-flex">
+            <h2 id="doc_name">{{ doc_dict['doc_name'] }}</h2>
+            <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
+        </div>
 
         <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
                                         {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}

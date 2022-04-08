@@ -4,6 +4,7 @@ import datetime
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
+from sqlalchemy import func
 from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
@@ -220,6 +221,16 @@ def create_app():
         volost = aliased(RefBooksElements)
         court_result = aliased(RefBooksElements)
         themes = aliased(RefBooksElements)
+
+        replace_func = func.regexp_replace(
+            Documents.doc_text,
+            "amp;",
+            ""
+        )
+        #Documents.query.update({'doc_text': replace_func})
+        #print(Documents.query.with_entities(Documents.id, Documents.doc_name).all())
+
+
         docs_test = Documents.query.with_entities(Documents.id,
                                                   Documents.doc_name,
                                                   Documents.reg_date,
@@ -313,8 +324,7 @@ def create_app():
         return render_template('index.html',
                                title="Добро пожаловать!",
                                column_dict=column_dict,
-                               docs_list=docs_list,
-                               docs_themes=docs_themes)
+                               docs_list=docs_list)
 
     @app.route('/<int:id>')
     def doc_page(id):

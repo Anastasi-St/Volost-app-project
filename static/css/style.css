@@ -1,57 +1,25 @@
-body {
-    margin: 20px;
-}
-p, h2, h3, table {
-    padding: 5px;
-    margin: 5px;
+#docsTable_length {
+    padding-left: 8px !important;
+    padding-top: 8px !important;
 }
 
-h2, h3 {
-    display: inline-block;
+#docsTable_paginate {
+    padding-bottom: 8px !important;
+    padding-right: 8px !important;
 }
 
-ul {
-    list-style-type: none;
-    display: inline-block;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+#docsTable_info {
+    padding-left: 8px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
 }
 
-li {
-    float: left;
+.paginate_button.current {
+    background-image: none !important;
+    background-color: lightgrey !important;
 }
 
-li a, #user_name {
-    display: block;
-    color: black;
-    text-align: center;
-    border: 1px solid transparent;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-li a:hover:not(li.active_page a) {
-    border: 1px solid grey;
-    border-radius: 5px;
-    background-color: #F7F7F7;
-}
-
-#sign_in_out a, .active_page {
-    display: inline-block;
-    border-radius: 5px;
-    background-color: #EAEAEA;
-}
-
-.nav_bar li {
-    width: 250px;
-}
-
-td, th {
-    padding: 5px;
-    text-align: center;
-}
-
-#back {
-    display: inline-block;
+.paginate_button:hover:not(.disabled, .current) {
+    background-image: none !important;
+    background-color: darkgrey !important;
 }
