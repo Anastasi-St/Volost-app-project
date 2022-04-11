@@ -306,8 +306,10 @@ def create_app():
         return theme_dicts, puns_dicts
 
     def query_to_dict(query_res):
-        return [dict((col, getattr(obj, col)) for col in list(obj.keys())) for obj in query_res]
-
+        try:
+            return [dict((col, getattr(obj, col)) for col in list(obj.keys())) for obj in query_res]
+        except TypeError:
+            return dict((col, getattr(query_res, col)) for col in query_res.__table__.columns.keys())
 
     @app.route('/') # methods=['GET', 'POST'])
     def index():
@@ -333,7 +335,7 @@ def create_app():
         #doc = Documents.query.all()
         if doc:
             doc_dict = dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys())
-            doc_dict = dict(itertools.islice(doc_dict.items(), 1, 26))
+            #doc_dict = dict(itertools.islice(doc_dict.items(), 1, 26))
             title = doc.doc_name
         else:
             warning = "Документа с ID "+str(id)+" нет в базе данных"
@@ -344,6 +346,15 @@ def create_app():
                                doc_dict=doc_dict,
                                title=title,
                                warning=warning)
+
+    @app.route('/edit/<int:id>')
+    @roles_required(['Admin'])
+    def edit(id):
+        doc = Documents.query.filter_by(id=id).first()
+        doc_dict = query_to_dict(doc)
+        return render_template('edit_meta.html',
+                               title="Редактировать метаданные",
+                               doc_dict=doc_dict)
 
     @app.route('/research')
     def research():

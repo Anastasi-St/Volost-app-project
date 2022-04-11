@@ -39,4 +39,9 @@
         <p>{{ warning }}</p>
     {% endif %}
 
+    {% if current_user.is_authenticated %}
+        <hr>
+        <a class="btn btn-secondary" href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
+    {% endif %}
+
 {% endblock %}

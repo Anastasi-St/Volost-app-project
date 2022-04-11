@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active_page = 'index' %}
+{% block content %}
+    {% if doc_dict %}
+    <ul class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('index') }}">Документы</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="/{{doc_dict['id']}}">{{ doc_dict['doc_name'] }}</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="#">Редактировать метаданные</a>
+        </li>
+    </ul>
+
+    <h2 id="doc_name">{{ doc_dict['doc_name'] }}</h2>
+    {% else %}
+    {% endif %}
+
+{% endblock %}

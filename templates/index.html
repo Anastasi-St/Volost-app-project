@@ -31,6 +31,17 @@
     </table>-->
     {% set short_dates = ["create_date", "decision_date", "appeal_date", "ap_decision_date", "decision_exec_date"] %}
 
+    <div class="row">
+        <div class="col-6">
+            <div class="input-group mb-2">
+                <input type="text" id="searchBar" class="form-control" placeholder="Введите название документа">
+                <span class="input-group-btn">
+                    <button class="btn btn-secondary ml-2" id="searchButton">Искать</button>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <div class="table table-bordered table-responsive">
     <table class="table-hover py-1" id="docsTable"><!--id="docsTable" class="tablesorter">-->
         <thead class="bg-light">

@@ -25,18 +25,29 @@
         <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>-->
         <script>
             $(document).ready(function() {
-                $('#docsTable').DataTable({
+                var table = $('#docsTable').DataTable({
                     "language": {
                         "url": "https://cdn.datatables.net/plug-ins/1.11.5/i18n/ru.json"
                     },
-                    "searching": false,
-                    "aaSorting": [],
-                    columnDefs: [{
-                        orderable: false,
-                        targets: 3
-                    }]
+                    "dom": "lrtip",
+                    "aaSorting": []
                 });
                 $('.dataTables_length').addClass('bs-select');
+
+                $("#searchButton").click(function() {
+                    var value = $("#searchBar").val().toLowerCase();
+                    table
+                    .column(0)
+                    .search(value)
+                    .draw();
+                });
+
+                $("#searchBar").keypress(function(e) {
+                    if(e.which === 13) {
+                        e.preventDefault();
+                        table.column(0).search($(this).val()).draw();
+                    }
+                });
             });
         </script>
     </head>

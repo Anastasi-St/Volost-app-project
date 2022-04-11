@@ -23,3 +23,7 @@
     background-image: none !important;
     background-color: darkgrey !important;
 }
+
+.input-group:not(.has-validation)>.form-control:not(:last-child) {
+    border-top-right-radius: 0.25rem !important;
+    border-bottom-right-radius: 0.25rem !important;
