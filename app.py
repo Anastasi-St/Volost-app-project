@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
+from forms import EditMeta
 
 def create_app():
     app = Flask(__name__)
@@ -222,14 +223,7 @@ def create_app():
         court_result = aliased(RefBooksElements)
         themes = aliased(RefBooksElements)
 
-        replace_func = func.regexp_replace(
-            Documents.doc_text,
-            "amp;",
-            ""
-        )
-        #Documents.query.update({'doc_text': replace_func})
         #print(Documents.query.with_entities(Documents.id, Documents.doc_name).all())
-
 
         docs_test = Documents.query.with_entities(Documents.id,
                                                   Documents.doc_name,
@@ -328,13 +322,18 @@ def create_app():
                                column_dict=column_dict,
                                docs_list=docs_list)
 
-    @app.route('/<int:id>')
+    @app.route('/<int:id>', methods=['GET', 'POST'])
     def doc_page(id):
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
-        #doc = Documents.query.all()
+        if request.method == "POST":
+            new_doc_name = request.form.get("doc_name")
+            #new_create_date = form.create_date.data
+            #new_decision_date = form.decision_date.data
+            doc.doc_name = new_doc_name
+            db.session.commit()
         if doc:
-            doc_dict = dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys())
+            doc_dict = query_to_dict(doc)
             #doc_dict = dict(itertools.islice(doc_dict.items(), 1, 26))
             title = doc.doc_name
         else:
@@ -347,14 +346,25 @@ def create_app():
                                title=title,
                                warning=warning)
 
-    @app.route('/edit/<int:id>')
+    @app.route('/edit/<int:id>', methods=['GET', 'POST'])
     @roles_required(['Admin'])
     def edit(id):
+        new_name = ''
         doc = Documents.query.filter_by(id=id).first()
         doc_dict = query_to_dict(doc)
+        form = EditMeta()
+        if doc_dict:
+            form.doc_name.data = doc_dict['doc_name']
+            form.create_date.data = doc_dict['create_date']
+            form.decision_date.data = doc_dict['decision_date']
+            #form.guberniya.choices = []
+        else:
+            warning = "Такого документа нет"
         return render_template('edit_meta.html',
                                title="Редактировать метаданные",
-                               doc_dict=doc_dict)
+                               doc_dict=doc_dict,
+                               form=form,
+                               new_name=new_name)
 
     @app.route('/research')
     def research():
