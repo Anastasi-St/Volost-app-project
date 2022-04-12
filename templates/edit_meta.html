@@ -36,9 +36,43 @@
                 {{ form.decision_date(class="form-control pl-2") }}
                 </span>
             </div>
+
+            <div class="input-group">
+                {{ form.guberniya.label(class="pt-2 pb-2 pr-2") }}
+                <span>
+                    {{ form.guberniya(class="form-control") }}
+                </span>
+            </div>
+            <div class="input-group">
+                {{ form.uyezd.label(class="pt-2 pb-2 pr-2") }}
+                <span>
+                    {{ form.uyezd(class="form-control") }}
+                </span>
+            </div>
+            <div class="input-group">
+                {{ form.volost.label(class="pt-2 pb-2 pr-2") }}
+                <span>
+                    {{ form.volost(class="form-control") }}
+                </span>
+            </div>
+
+            <div class="input-group">
+                {{ form.plaintiff_res_place.label(class="pt-2 pb-2 pr-2") }}
+                <span>
+                    {{ form.plaintiff_res_place(class="form-control") }}
+                </span>
+            </div>
+            <div class="input-group">
+                {{ form.defendant_res_place.label(class="pt-2 pb-2 pr-2") }}
+                <span>
+                    {{ form.defendant_res_place(class="form-control") }}
+                </span>
+            </div>
+
             <div class="form-group">
                 {{ form.submit(class="btn btn-secondary mt-2") }}
             </div>
+
             {% for error in form.doc_name.errors %}
             <p>{{ error }}</p>
             {% endfor %}

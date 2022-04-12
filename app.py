@@ -305,6 +305,15 @@ def create_app():
         except TypeError:
             return dict((col, getattr(query_res, col)) for col in query_res.__table__.columns.keys())
 
+    #def query_to_list(query_res):
+    #    return [item[0] for item in query_res]
+
+    def ref_elements_list(n):
+        query = RefBooksElements.query.with_entities(RefBooksElements.id,
+                                                     RefBooksElements.ref_value).filter_by(ref_book=n).all()
+        els_list = [tuple(list(item)) for item in query]
+        return els_list
+
     @app.route('/') # methods=['GET', 'POST'])
     def index():
         #docs = Documents.query.all()
@@ -327,10 +336,8 @@ def create_app():
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
         if request.method == "POST":
-            new_doc_name = request.form.get("doc_name")
-            #new_create_date = form.create_date.data
-            #new_decision_date = form.decision_date.data
-            doc.doc_name = new_doc_name
+            doc.doc_name = request.form.get("doc_name")
+            # Здесь нужна функция которая будет в цикле выполнять doc.field_name = request.form.get("<field_name>")
             db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
@@ -354,10 +361,30 @@ def create_app():
         doc_dict = query_to_dict(doc)
         form = EditMeta()
         if doc_dict:
+            gs = ref_elements_list(7)
+            us = ref_elements_list(8)
+            vs = ref_elements_list(9)
+            rp = ref_elements_list(10)
+
             form.doc_name.data = doc_dict['doc_name']
             form.create_date.data = doc_dict['create_date']
             form.decision_date.data = doc_dict['decision_date']
-            #form.guberniya.choices = []
+
+            form.guberniya.choices = gs
+            form.guberniya.default = doc_dict['guberniya']
+
+            form.uyezd.choices = us
+            form.uyezd.default = doc_dict['uyezd']
+
+            form.volost.choices = vs
+            form.volost.default = doc_dict['volost']
+
+            form.plaintiff_res_place.choices = rp
+            form.plaintiff_res_place.default = doc_dict['plaintiff_res_place']
+
+            form.defendant_res_place.choices = rp
+            form.defendant_res_place.default = doc_dict['defendant_res_place']
+
         else:
             warning = "Такого документа нет"
         return render_template('edit_meta.html',
