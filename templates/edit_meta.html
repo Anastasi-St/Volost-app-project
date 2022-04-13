@@ -17,66 +17,38 @@
     <h2 class="mb-4" id="doc_name">{{ doc_dict['doc_name'] }}</h2>
 
     {% if form %}
+    {% set diff_fields = ["csrf_token", "doc_name", "submit"] %}
+    {% set checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"] %}
     <!--<div class="row"></div>-->
         <form action="/{{ doc_dict['id'] }}" method="POST">
-            {{ form.csrf_token }}
+            {{ form.csrf_token() }}
             <div class="input-group">
                 {{ form.doc_name.label(class="pt-2 pb-2 pr-2") }}
                 {{ form.doc_name(class="form-control") }}
             </div>
-            <div class="input-group">
-                {{ form.create_date.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                {{ form.create_date(class="form-control pl-2") }}
-                </span>
-            </div>
-            <div class="input-group">
-                {{ form.decision_date.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                {{ form.decision_date(class="form-control pl-2") }}
-                </span>
-            </div>
-
-            <div class="input-group">
-                {{ form.guberniya.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                    {{ form.guberniya(class="form-control") }}
-                </span>
-            </div>
-            <div class="input-group">
-                {{ form.uyezd.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                    {{ form.uyezd(class="form-control") }}
-                </span>
-            </div>
-            <div class="input-group">
-                {{ form.volost.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                    {{ form.volost(class="form-control") }}
-                </span>
-            </div>
-
-            <div class="input-group">
-                {{ form.plaintiff_res_place.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                    {{ form.plaintiff_res_place(class="form-control") }}
-                </span>
-            </div>
-            <div class="input-group">
-                {{ form.defendant_res_place.label(class="pt-2 pb-2 pr-2") }}
-                <span>
-                    {{ form.defendant_res_place(class="form-control") }}
-                </span>
-            </div>
+            {% for field in form if field.name not in diff_fields %}
+                {% if field.name not in checkboxes %}
+                    <div class="input-group">
+                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        <span>
+                        {{ field(class="form-control pl-2") }}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="form-check">
+                        {{ field.label(class="form-check-label") }}
+                        {{ field }}
+                    </div>
+                {% endif %}
+            {% endfor %}
 
             <div class="form-group">
                 {{ form.submit(class="btn btn-secondary mt-2") }}
             </div>
 
-            {% for error in form.doc_name.errors %}
+            <!--{% for error in form.doc_name.errors %}
             <p>{{ error }}</p>
-            {% endfor %}
-            {{ new_name }}
+            {% endfor %} -->
         </form>
     {% endif %}
     {% else %}

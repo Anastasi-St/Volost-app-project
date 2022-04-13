@@ -69,12 +69,14 @@ def create_app():
         decision_date = db.Column(db.DateTime(), nullable=True)
         wait_time = db.Column(db.Integer(), nullable=True) # вычислить!
         dec_book_num = db.Column(db.Integer(), nullable=True)
-         #???
+        #???
         presence_plaintiff = db.Column(db.Boolean(), server_default='1', nullable=True)
         presence_defendant = db.Column(db.Boolean(), server_default='1', nullable=True)
         lawsuit_price = db.Column(db.Integer(), nullable=True)
         court_result = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=True)
-         #???
+        #???
+        # plaintiff_satisfied !
+        # defendant_satisfied !
         compens = db.Column(db.Integer(), nullable=True)
         appeal =  db.Column(db.Boolean(), nullable=True)
         appeal_succ = db.Column(db.Boolean(), nullable=True)
@@ -338,6 +340,7 @@ def create_app():
         if request.method == "POST":
             doc.doc_name = request.form.get("doc_name")
             # Здесь нужна функция которая будет в цикле выполнять doc.field_name = request.form.get("<field_name>")
+            #print(request.form.get("presence_plaintiff"))
             db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
@@ -359,31 +362,48 @@ def create_app():
         new_name = ''
         doc = Documents.query.filter_by(id=id).first()
         doc_dict = query_to_dict(doc)
+        fields = ['doc_name', 'create_date', 'decision_date', 'dec_book_num',
+                  'presence_plaintiff', 'presence_defendant', 'lawsuit_price',
+                  'compens', 'appeal', 'appeal_succ', 'appeal_date',
+                  'ap_decision_date', 'decision_exec_date']
+        choices = {'guberniya': 7, 'uyezd': 8 , 'volost': 9, 'plaintiff_res_place': 10, 'defendant_res_place': 10,
+                   'court_result': 3}
         form = EditMeta()
+        def set_form_data(form):
+            for field in form:
+                if field.name in fields:
+                    field.data = doc_dict[field.name]
+                    #if field.name == "presence_plaintiff":
+                    #    print(doc_dict[field.name])
+                elif field.name in choices:
+                    ch = ref_elements_list(choices[field.name])
+                    field.choices = ch
         if doc_dict:
-            gs = ref_elements_list(7)
-            us = ref_elements_list(8)
-            vs = ref_elements_list(9)
-            rp = ref_elements_list(10)
+            set_form_data(form)
+            #print(doc_dict['presence_plaintiff'])
+            #gs = ref_elements_list(7) # список губерний
+            #us = ref_elements_list(8) # уездов
+            #vs = ref_elements_list(9) # волостей
+            #rp = ref_elements_list(10) # мест жительства тяжущихся
 
-            form.doc_name.data = doc_dict['doc_name']
-            form.create_date.data = doc_dict['create_date']
-            form.decision_date.data = doc_dict['decision_date']
+            #form.doc_name.data = doc_dict['doc_name']
+            #form.create_date.data = doc_dict['create_date']
+            #form.decision_date.data = doc_dict['decision_date']
 
-            form.guberniya.choices = gs
-            form.guberniya.default = doc_dict['guberniya']
+            #form.guberniya.choices = gs
+            #form.guberniya.default = doc_dict['guberniya']
 
-            form.uyezd.choices = us
-            form.uyezd.default = doc_dict['uyezd']
+            #form.uyezd.choices = us
+            #form.uyezd.default = doc_dict['uyezd']
 
-            form.volost.choices = vs
-            form.volost.default = doc_dict['volost']
+            #form.volost.choices = vs
+            #form.volost.default = doc_dict['volost']
 
-            form.plaintiff_res_place.choices = rp
-            form.plaintiff_res_place.default = doc_dict['plaintiff_res_place']
+            #form.plaintiff_res_place.choices = rp
+            #form.plaintiff_res_place.default = doc_dict['plaintiff_res_place']
 
-            form.defendant_res_place.choices = rp
-            form.defendant_res_place.default = doc_dict['defendant_res_place']
+            #form.defendant_res_place.choices = rp
+            #form.defendant_res_place.default = doc_dict['defendant_res_place']
 
         else:
             warning = "Такого документа нет"
