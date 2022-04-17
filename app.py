@@ -50,7 +50,7 @@ def create_app():
     class RefBooksElements(db.Model):
         __tablename__ = 'ref_books_elements'
         id =  db.Column(db.Integer(), primary_key=True)
-        ref_book = db.Column(db.Integer, db.ForeignKey('reference_books.id'), nullable=False)
+        ref_book = db.Column(db.Integer(), db.ForeignKey('reference_books.id'), nullable=False)
         ref_value = db.Column(db.String(255), nullable=False)
         ref_date = db.Column(db.DateTime(), nullable=False)
 
@@ -72,12 +72,12 @@ def create_app():
         #???
         presence_plaintiff = db.Column(db.Boolean(), server_default='1', nullable=True)
         presence_defendant = db.Column(db.Boolean(), server_default='1', nullable=True)
-        lawsuit_price = db.Column(db.Integer(), nullable=True)
+        lawsuit_price = db.Column(db.Float(), nullable=True)
         court_result = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=True)
         #???
         # plaintiff_satisfied !
         # defendant_satisfied !
-        compens = db.Column(db.Integer(), nullable=True)
+        compens = db.Column(db.Float(), nullable=True)
         appeal =  db.Column(db.Boolean(), nullable=True)
         appeal_succ = db.Column(db.Boolean(), nullable=True)
         appeal_date = db.Column(db.DateTime(), nullable=True)
@@ -337,10 +337,66 @@ def create_app():
     def doc_page(id):
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
+        string_fields = ['doc_name']
+        int_fields = ['guberniya', 'uyezd', 'volost', 'plaintiff_res_place', 'defendant_res_place',
+                      'dec_book_num', 'court_result']
+        float_fields = ['lawsuit_price', 'compens']
+        date_fields = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
+        checkbox_fields = ['presence_plaintiff', 'presence_defendant', 'appeal', 'appeal_succ']
+        multiselect_fields = ['theme', 'court_punishment']
         if request.method == "POST":
-            doc.doc_name = request.form.get("doc_name")
-            # Здесь нужна функция которая будет в цикле выполнять doc.field_name = request.form.get("<field_name>")
-            #print(request.form.get("presence_plaintiff"))
+            #doc.doc_name = request.form.get("doc_name")
+            #print(list(request.form.items())[1:-1])
+            elements = {}
+            req = request.form.to_dict(False)
+            for key, val in zip(req.keys(), req.values()):
+                if key in multiselect_fields:
+                    elements[key] = val
+                else:
+                    elements[key] = val[0]
+            #print(elements)
+            for el in list(elements.keys())[1:-1]:
+                if elements[el] != None and elements[el] != '' and el not in checkbox_fields:
+                    if el in int_fields: # изменение формата данных полей, т.к. они все строки
+                        new = int(elements[el])
+                    elif el in float_fields:
+                        new = float(elements[el])
+                    elif el in date_fields:
+                        new = datetime.datetime.strptime(elements[el], "%Y-%m-%d")
+                    elif el in multiselect_fields:
+                        ids = [int(id) for id in elements[el]]
+                        new = [RefBooksElements.query.filter_by(id=id).first() for id in ids]
+                    else:
+                        new = elements[el]
+
+                    if el not in multiselect_fields:
+                        if getattr(doc, el) == new: # если значение не поменялось — проверять следующее поле
+                            continue
+                        else: # если значение поменялось — записать новое
+                            print('yes')
+                            setattr(doc, el, new)
+                    else:
+                        if [e.id for e in getattr(doc, el)] == [n.id for n in new]:
+                            print('ничего не поменялось')
+                            continue
+                        else:
+                            print('что-то поменялось')
+                            #setattr(doc, el, new)
+                else:
+                    setattr(doc, el, None)
+
+            for check in checkbox_fields: # отдельный цикл для  чекбоксов
+                if check in elements.keys():
+                    if getattr(doc, check):
+                        continue
+                    else:
+                        setattr(doc, check, True)
+                else:
+                    if not getattr(doc, check):
+                        continue
+                    else:
+                        setattr(doc, check, False)
+
             db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
@@ -362,56 +418,47 @@ def create_app():
         new_name = ''
         doc = Documents.query.filter_by(id=id).first()
         doc_dict = query_to_dict(doc)
+
         fields = ['doc_name', 'create_date', 'decision_date', 'dec_book_num',
                   'presence_plaintiff', 'presence_defendant', 'lawsuit_price',
                   'compens', 'appeal', 'appeal_succ', 'appeal_date',
                   'ap_decision_date', 'decision_exec_date']
         choices = {'guberniya': 7, 'uyezd': 8 , 'volost': 9, 'plaintiff_res_place': 10, 'defendant_res_place': 10,
-                   'court_result': 3}
+                   'court_result': 3, 'theme': 2, 'court_punishment': 4}
+        multiselect = ['theme', 'court_punishment']
+        checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"]
+        diff_fields = ["csrf_token", "doc_name", "submit"]
+
         form = EditMeta()
+
         def set_form_data(form):
             for field in form:
                 if field.name in fields:
-                    field.data = doc_dict[field.name]
-                    #if field.name == "presence_plaintiff":
-                    #    print(doc_dict[field.name])
+                    field.data = getattr(doc, field.name)
                 elif field.name in choices:
                     ch = ref_elements_list(choices[field.name])
                     field.choices = ch
+                    if field.name in multiselect:
+                        set_values = []
+                        for el in getattr(doc, field.name):
+                            new = RefBooksElements.query.with_entities(RefBooksElements.id,
+                                                                       RefBooksElements.ref_value).filter_by(id=el.id).first()
+                            set_values.append(new[0])
+                        field.data = set_values
+                        print(set_values)
+                    else:
+                        field.data = getattr(doc, field.name)
+
         if doc_dict:
             set_form_data(form)
-            #print(doc_dict['presence_plaintiff'])
-            #gs = ref_elements_list(7) # список губерний
-            #us = ref_elements_list(8) # уездов
-            #vs = ref_elements_list(9) # волостей
-            #rp = ref_elements_list(10) # мест жительства тяжущихся
-
-            #form.doc_name.data = doc_dict['doc_name']
-            #form.create_date.data = doc_dict['create_date']
-            #form.decision_date.data = doc_dict['decision_date']
-
-            #form.guberniya.choices = gs
-            #form.guberniya.default = doc_dict['guberniya']
-
-            #form.uyezd.choices = us
-            #form.uyezd.default = doc_dict['uyezd']
-
-            #form.volost.choices = vs
-            #form.volost.default = doc_dict['volost']
-
-            #form.plaintiff_res_place.choices = rp
-            #form.plaintiff_res_place.default = doc_dict['plaintiff_res_place']
-
-            #form.defendant_res_place.choices = rp
-            #form.defendant_res_place.default = doc_dict['defendant_res_place']
-
         else:
             warning = "Такого документа нет"
         return render_template('edit_meta.html',
                                title="Редактировать метаданные",
                                doc_dict=doc_dict,
                                form=form,
-                               new_name=new_name)
+                               checkboxes=checkboxes,
+                               diff_fields=diff_fields)
 
     @app.route('/research')
     def research():

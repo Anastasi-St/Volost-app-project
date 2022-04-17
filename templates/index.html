@@ -43,7 +43,7 @@
     </div>
 
     <div class="table table-bordered table-responsive">
-    <table class="table-hover py-1" id="docsTable"><!--id="docsTable" class="tablesorter">-->
+    <table class="table-hover py-1" id="docsTable">
         <thead class="bg-light">
             <tr>
                 <th class="align-middle text-center">Название документа</th>
@@ -57,14 +57,16 @@
             <tr>
                 <td class="align-middle"><a href="/{{ doc['id'] }}">{{ doc['doc_name'] }}</a></td>
                 {% for value in column_dict.keys() %}
-                <td class="align-middle text-center">{% if not doc[value] %}
-                    <i>Не указано</i>
-                    {% elif doc[value] == True %}
-                        &#10004;
+                <td class="align-middle text-center">{% if doc[value] is sameas none or doc[value] is sameas '' %}
+                    <b><i>Не указано</i></b>
+                    {% elif doc[value] is sameas true %}
+                        <b>&check;</b>
+                    {% elif doc[value] is sameas false %}
+                        &#10060;
                     {% elif value in short_dates %}
                         {{ doc[value].strftime('%d.%m.%Y') }}
                     {% elif value == "reg_date" %}
-                        {{ doc[value].strftime('%d.%m.%Y %H:%M:%S') }}
+                        {{ doc[value].strftime('%d.%m.%Y %H:%M') }}
                     {% else %}
                         {{ doc[value] }}
                     {% endif %}

@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField, \
+from wtforms import StringField, SubmitField, TextAreaField, SelectMultipleField, \
     DateField, SelectField, IntegerField, DecimalField, BooleanField
 from wtforms.validators import DataRequired
 
@@ -12,11 +12,13 @@ class EditMeta(FlaskForm):
     defendant_res_place = SelectField("Место жительства ответчика: ", coerce=int)
     create_date = DateField("Дата подачи заявления: ")
     decision_date = DateField("Дата вынесения решения: ")
+    theme = SelectMultipleField("Темы: ", coerce=int)
     dec_book_num = IntegerField("Номер по книге решений: ")
     presence_plaintiff = BooleanField("Присутствие истцов: ", default='checked', false_values=(False))
     presence_defendant = BooleanField("Присутствие ответчиков: ", default='checked', false_values=(False))
     lawsuit_price = DecimalField("Цена предъявленного иска в рублях: ")
     court_result = SelectField("Результат суда: ", coerce=int)
+    court_punishment = SelectMultipleField("Наказания по суду: ", coerce=int)
     compens = DecimalField("Сумма присуждённого возмещения в рублях: ")
 
     appeal = BooleanField("Обжалование: ", default='unchecked', false_values=(False))

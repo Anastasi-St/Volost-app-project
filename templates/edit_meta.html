@@ -17,8 +17,6 @@
     <h2 class="mb-4" id="doc_name">{{ doc_dict['doc_name'] }}</h2>
 
     {% if form %}
-    {% set diff_fields = ["csrf_token", "doc_name", "submit"] %}
-    {% set checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"] %}
     <!--<div class="row"></div>-->
         <form action="/{{ doc_dict['id'] }}" method="POST">
             {{ form.csrf_token() }}
@@ -35,9 +33,9 @@
                         </span>
                     </div>
                 {% else %}
-                    <div class="form-check">
-                        {{ field.label(class="form-check-label") }}
-                        {{ field }}
+                    <div class="input-group">
+                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        <div class="p-2">{{ field(class="align-middle") }}</div>
                     </div>
                 {% endif %}
             {% endfor %}
