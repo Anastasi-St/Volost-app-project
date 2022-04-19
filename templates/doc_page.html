@@ -12,7 +12,7 @@
         </ul>
 
         <div class="d-flex">
-            <h2 id="doc_name">{{ doc_dict['doc_name'] }}</h2>
+            <h3 id="doc_name">{{ doc_dict['doc_name'] }}</h3>
             <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
         </div>
 
@@ -31,7 +31,7 @@
 
         <hr>
         {% if doc_dict['doc_text'] %}
-            {{ doc_dict['doc_text']|safe }}
+            <small>{{ doc_dict['doc_text']|safe }}</small>
         {% else %}
             <h3>Тескт документа не указан</h3>
         {% endif %}

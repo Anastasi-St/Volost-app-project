@@ -1,3 +1,11 @@
+#docsTable_wrapper {
+    line-height: normal !important;
+}
+
+div.table {
+    max-height: 80vh !important;
+}
+
 #docsTable_length {
     padding-left: 8px !important;
     padding-top: 8px !important;
@@ -6,6 +14,7 @@
 #docsTable_paginate {
     padding-bottom: 8px !important;
     padding-right: 8px !important;
+    overflow-x: auto !important;
 }
 
 #docsTable_info {
@@ -28,4 +37,3 @@
     border-top-right-radius: 0.25rem !important;
     border-top-left-radius: 0.25rem !important;
     border-bottom-right-radius: 0.25rem !important;
-    border-bottom-left-radius: 0.25rem !important;
