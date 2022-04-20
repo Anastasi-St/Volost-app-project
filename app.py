@@ -89,9 +89,9 @@ def create_app():
         doc_text = db.Column(db.Text(), nullable=True)
         img_names = db.Column(db.String(100), nullable=True)
 
-        theme = db.relationship('RefBooksElements', secondary='doc_themes')
-        court_punishment =  db.relationship('RefBooksElements', secondary='doc_court_punishments')
-        ref_doc_properties = db.relationship('RefBooksElements', secondary='ref_doc_properties')
+        theme = db.relationship('RefBooksElements', secondary='doc_themes', lazy='dynamic')
+        court_punishment =  db.relationship('RefBooksElements', secondary='doc_court_punishments', lazy='dynamic')
+        ref_doc_properties = db.relationship('RefBooksElements', secondary='ref_doc_properties', lazy='dynamic')
 
     class DocThemes(db.Model):
         __tablename__ = 'doc_themes'
@@ -344,59 +344,54 @@ def create_app():
         date_fields = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
         checkbox_fields = ['presence_plaintiff', 'presence_defendant', 'appeal', 'appeal_succ']
         multiselect_fields = ['theme', 'court_punishment']
+        diff_fields = ['csrf_token', 'submit']
         if request.method == "POST":
             #doc.doc_name = request.form.get("doc_name")
             #print(list(request.form.items())[1:-1])
             elements = {}
-            req = request.form.to_dict(False)
-            for key, val in zip(req.keys(), req.values()):
-                if key in multiselect_fields:
-                    elements[key] = val
-                else:
-                    elements[key] = val[0]
-            #print(elements)
-            for el in list(elements.keys())[1:-1]:
-                if elements[el] != None and elements[el] != '' and el not in checkbox_fields:
-                    if el in int_fields: # изменение формата данных полей, т.к. они все строки
-                        new = int(elements[el])
-                    elif el in float_fields:
-                        new = float(elements[el])
-                    elif el in date_fields:
-                        new = datetime.datetime.strptime(elements[el], "%Y-%m-%d")
-                    elif el in multiselect_fields:
-                        ids = [int(id) for id in elements[el]]
-                        new = [RefBooksElements.query.filter_by(id=id).first() for id in ids]
-                    else:
-                        new = elements[el]
+            form = EditMeta(request.form)
+            #for field in form:
+            #    print(field.name, field.data)
 
-                    if el not in multiselect_fields:
-                        if getattr(doc, el) == new: # если значение не поменялось — проверять следующее поле
+            for field in form:
+                if field.name not in diff_fields:
+                    if type(field.data) != list:
+                        if getattr(doc, field.name) == field.data:
+                            #print(field.name, '— ничего нового')
                             continue
-                        else: # если значение поменялось — записать новое
-                            print('yes')
-                            setattr(doc, el, new)
+                        else:
+                            print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
+                            setattr(doc, field.name, field.data)
                     else:
-                        if [e.id for e in getattr(doc, el)] == [n.id for n in new]:
+                        ids = [el.id for el in getattr(doc, field.name)]
+                        print('айдис —', field.name, ids)
+                        if field.data == ids:
                             print('ничего не поменялось')
                             continue
                         else:
-                            print('что-то поменялось')
-                            #setattr(doc, el, new)
-                else:
-                    setattr(doc, el, None)
+                            for id in ids:
+                                if id in field.data:
+                                    continue
+                                else:
+                                    el = RefBooksElements.query.filter_by(id=id).first()
+                                    #getattr(doc, field.name).remove(el)
+                                    #db.session.add(doc)
+                                    #db.session.commit()
+                                    #print('удалили', field.name, el)
+                            #new_ids = [el.id for el in getattr(doc, field.name)]
+                            for id in field.data:
+                                if id in ids: #new_ids:
+                                    continue
+                                else:
+                                    el = RefBooksElements.query.filter_by(id=id).first()
+                                    #getattr(doc, field.name).append(el)
+                                    #db.session.add(doc)
+                                    #db.session.commit()
+                                    #print('добавили', field.name, el)
+                                    #break
 
-            for check in checkbox_fields: # отдельный цикл для  чекбоксов
-                if check in elements.keys():
-                    if getattr(doc, check):
-                        continue
-                    else:
-                        setattr(doc, check, True)
-                else:
-                    if not getattr(doc, check):
-                        continue
-                    else:
-                        setattr(doc, check, False)
-
+            #new_el = RefBooksElements.query.filter_by(id=22).first()
+            #doc.court_punishment.append(new_el)
             db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
@@ -423,6 +418,7 @@ def create_app():
                   'presence_plaintiff', 'presence_defendant', 'lawsuit_price',
                   'compens', 'appeal', 'appeal_succ', 'appeal_date',
                   'ap_decision_date', 'decision_exec_date']
+        dates = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
         choices = {'guberniya': 7, 'uyezd': 8 , 'volost': 9, 'plaintiff_res_place': 10, 'defendant_res_place': 10,
                    'court_result': 3, 'theme': 2, 'court_punishment': 4}
         multiselect = ['theme', 'court_punishment']
@@ -445,7 +441,7 @@ def create_app():
                                                                        RefBooksElements.ref_value).filter_by(id=el.id).first()
                             set_values.append(new[0])
                         field.data = set_values
-                        print(set_values)
+                        #print(set_values)
                     else:
                         field.data = getattr(doc, field.name)
 
@@ -458,7 +454,8 @@ def create_app():
                                doc_dict=doc_dict,
                                form=form,
                                checkboxes=checkboxes,
-                               diff_fields=diff_fields)
+                               diff_fields=diff_fields,
+                               multiselect=multiselect)
 
     @app.route('/research')
     def research():
