@@ -95,15 +95,19 @@ def create_app():
 
     class DocThemes(db.Model):
         __tablename__ = 'doc_themes'
-        id = db.Column(db.Integer(), primary_key=True)
-        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
-        theme_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'))
+        #id = db.Column(db.Integer(), primary_key=True)
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'),
+                           nullable=False, primary_key=True)
+        theme_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'),
+                             nullable=False, primary_key=True)
 
     class DocCourtPunishments(db.Model):
         __tablename__ = 'doc_court_punishments'
-        id = db.Column(db.Integer(), primary_key=True)
-        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
-        court_punishment_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'), nullable=False)
+        #id = db.Column(db.Integer(), primary_key=True)
+        doc_id = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'),
+                           nullable=False, primary_key=True)
+        court_punishment_id = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id', ondelete='CASCADE'),
+                                        nullable=False, primary_key=True)
 
     class DocumentsFiles(db.Model):
         __tablename__ = 'documents_files'
@@ -374,20 +378,19 @@ def create_app():
                                     continue
                                 else:
                                     el = RefBooksElements.query.filter_by(id=id).first()
-                                    #getattr(doc, field.name).remove(el)
-                                    #db.session.add(doc)
+                                    getattr(doc, field.name).remove(el)
                                     #db.session.commit()
-                                    #print('удалили', field.name, el)
+                                    print('удалили', field.name, el)
                             #new_ids = [el.id for el in getattr(doc, field.name)]
                             for id in field.data:
                                 if id in ids: #new_ids:
                                     continue
                                 else:
                                     el = RefBooksElements.query.filter_by(id=id).first()
-                                    #getattr(doc, field.name).append(el)
-                                    #db.session.add(doc)
+                                    getattr(doc, field.name).append(el)
+                                    db.session.merge(doc)
                                     #db.session.commit()
-                                    #print('добавили', field.name, el)
+                                    print('добавили', field.name, el)
                                     #break
 
             #new_el = RefBooksElements.query.filter_by(id=22).first()
