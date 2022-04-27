@@ -38,3 +38,32 @@ class EditMeta(FlaskForm):
     #        if not getattr(self, date).data:
     #            setattr(getattr(self, date), 'data', datetime.date(1914, 1, 1))
 
+class SearchForm(FlaskForm):
+    #reg_date
+    guberniya = SelectMultipleField("Губерния: ", coerce=int)
+    uyezd = SelectMultipleField("Уезд: ", coerce=int)
+    volost = SelectMultipleField("Волость: ", coerce=int)
+    plaintiff_res_place = SelectMultipleField("Место жительства истца: ", coerce=int)
+    defendant_res_place = SelectMultipleField("Место жительства ответчика: ", coerce=int)
+    #create_date
+    #decision_date
+    #wait_time
+    theme = SelectMultipleField("Темы: ", coerce=int)
+    #dec_book_num
+    presence_plaintiff = BooleanField("Присутствие истцов: ", false_values=(False,))
+    presence_defendant = BooleanField("Присутствие ответчиков: ", false_values=(False,))
+    #lawsuit_price
+    court_result = SelectMultipleField("Результат суда: ", coerce=int)
+    court_punishment = SelectMultipleField("Наказания по суду: ", coerce=int)
+    #compens
+    appeal = BooleanField("Обжалование: ", false_values=(False,))
+    appeal_succ = BooleanField("Успешность обжалования: ", false_values=(False,))
+    #appeal_date
+    #ap_decision_date
+    #decision_exec_date
+    #wait_time
+
+    submit = SubmitField("Искать")
+
+
+

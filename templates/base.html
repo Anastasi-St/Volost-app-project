@@ -91,11 +91,22 @@
                     }
                 });
 
+                $("#advancedSearch").click(function() {
+                    $("#searchForm").toggle("fast");
+                });
+
+                $("#resetForm").click(function() {
+                    $('input:checkbox').removeAttr('checked');
+                    $('form').get(0).reset();
+                });
+
                 $(".multiple").multiselect(
                     {
                         nonSelectedText: "Ничего не выбрано",
                         allSelectedText: "Выбрано всё",
-                        maxHeight: 150
+                        maxHeight: 150,
+                        numberDisplayed: 5,
+                        nSelectedText: "выбрано"
                     }
                 );
             });

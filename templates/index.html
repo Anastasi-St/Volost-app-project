@@ -42,6 +42,45 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col">
+            <button id="advancedSearch" class="btn btn-secondary dropdown-toggle mb-2" data-toggle="dropdown">Расширенный поиск&nbsp</button>
+            <span id="searchForm"> <!--style="display: none;">-->
+                <form action="" method="POST">
+                    {{ form.csrf_token() }}
+                    {% for field in form if field.name not in diff_fields %}
+                        {% if field.name in choices %}
+                            <span class="p-1">
+                                    {{ field.label(class="pt-2 pb-2 pr-2") }}
+                                    {{ field(class="multiple small", multiple="multiple") }}
+                            </span>
+                        {% elif field.name in checkboxes %}
+                            <span class="p-1">
+                                {{ field.label(class="pt-2 pb-2 pr-2") }}
+                                {{ field(class="align-middle") }}
+                            </span>
+                        {% else  %}
+                            <div class="input-group">
+                                {{ field.label(class="pt-2 pb-2 pr-2") }}
+                                <span>
+                                    {{ field(class="form-control pl-2") }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="form-group">
+                        {{ form.submit(class="btn btn-secondary mt-2") }}
+                        <span>
+                            <button id="resetForm" class="btn btn-secondary mt-2 ml-2">Очистить</button>
+                        </span>
+                    </div>
+
+                </form>
+            </span>
+        </div>
+    </div>
+
 
     <div class="table table-bordered table-hover table-responsive small">
     <table class="py-1" id="docsTable">

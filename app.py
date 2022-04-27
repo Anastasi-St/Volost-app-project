@@ -8,7 +8,7 @@ from sqlalchemy import func
 from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
-from forms import EditMeta
+from forms import EditMeta, SearchForm
 
 def create_app():
     app = Flask(__name__)
@@ -320,48 +320,102 @@ def create_app():
         els_list = [tuple(list(item)) for item in query]
         return els_list
 
-    @app.route('/') # methods=['GET', 'POST'])
+    def intersect(list1, list2):
+        intersection = [val for val in list1 if val in list2]
+        return intersection
+
+    # Поля для форм
+    fields = ['doc_name', 'create_date', 'decision_date', 'dec_book_num',
+              'presence_plaintiff', 'presence_defendant', 'lawsuit_price',
+              'compens', 'appeal', 'appeal_succ', 'appeal_date',
+              'ap_decision_date', 'decision_exec_date']
+    dates = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
+    choices = {'guberniya': 7, 'uyezd': 8 , 'volost': 9, 'plaintiff_res_place': 10, 'defendant_res_place': 10,
+               'court_result': 3, 'theme': 2, 'court_punishment': 4}
+    multiselect = ['theme', 'court_punishment']
+    checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"]
+    diff_fields = ["csrf_token", "doc_name", "submit"]
+
+    @app.route('/', methods=['GET', 'POST'])
     def index():
-        #docs = Documents.query.all()
         docs, docs_themes, docs_punishments = get_all_docs()
         #docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
+        all_docs = Documents.query.all()
         docs_list = query_to_dict(docs)
         docs_themes, docs_punishments = get_themes_puns()
-        #print(docs_punishments)
+
         for i in range(len(docs_themes)):
             docs_list[i].update(docs_themes[i])
             docs_list[i].update(docs_punishments[i])
-        #print(docs_list)
+
+        if request.method == 'POST':
+            form = SearchForm(request.form)
+
+            def select_docs(all_docs, form):
+                fields = [field for field in form if field.name not in diff_fields]
+                values = []
+                id_list = []
+                for doc in all_docs:
+                    val = [doc.id]
+                    for field in fields:
+                        if field.name in multiselect:
+                            els = [el.id for el in getattr(doc, field.name)]
+                            val.append((els, field.data))
+                        else:
+                            val.append((getattr(doc, field.name), field.data))
+                    values.append(val)
+                for el in values:
+                    temp_list = []
+                    count1 = 0
+                    count2 = 0
+                    for doc_val, form_val in el[1:]:
+                        if form_val:
+                            count1 += 1
+                            if (type(doc_val) == list and intersect(doc_val, form_val)) \
+                                or (type(doc_val) == int and doc_val in form_val) \
+                                or (doc_val == True and form_val == doc_val):
+                                    count2 += 1
+                    #print(count1, count2)
+                    if count1 == count2:
+                        id_list.append(el[0])
+
+                new_docs_list = [doc for doc in docs_list if doc['id'] in id_list ]
+                #print(id_list)
+                return new_docs_list
+            if len(list(request.form.to_dict().keys())) > 2:
+                docs_list = select_docs(all_docs, form)
+        else:
+            form = SearchForm()
+
+        def set_search_form(form):
+            for field in form:
+                if field.name in choices:
+                    ch = ref_elements_list(choices[field.name])
+                    field.choices = ch
+
+        set_search_form(form)
+
         return render_template('index.html',
                                title="Добро пожаловать!",
                                column_dict=column_dict,
-                               docs_list=docs_list)
+                               docs_list=docs_list,
+                               choices=choices,
+                               diff_fields=diff_fields,
+                               checkboxes=checkboxes,
+                               form=form)
 
     @app.route('/<int:id>', methods=['GET', 'POST'])
     def doc_page(id):
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
-        string_fields = ['doc_name']
-        int_fields = ['guberniya', 'uyezd', 'volost', 'plaintiff_res_place', 'defendant_res_place',
-                      'dec_book_num', 'court_result']
-        float_fields = ['lawsuit_price', 'compens']
-        date_fields = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
-        checkbox_fields = ['presence_plaintiff', 'presence_defendant', 'appeal', 'appeal_succ']
-        multiselect_fields = ['theme', 'court_punishment']
         diff_fields = ['csrf_token', 'submit']
         if request.method == "POST":
-            #doc.doc_name = request.form.get("doc_name")
-            #print(list(request.form.items())[1:-1])
-            elements = {}
             form = EditMeta(request.form)
-            #for field in form:
-            #    print(field.name, field.data)
 
             for field in form:
                 if field.name not in diff_fields:
                     if type(field.data) != list:
                         if getattr(doc, field.name) == field.data:
-                            #print(field.name, '— ничего нового')
                             continue
                         else:
                             print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
@@ -373,32 +427,28 @@ def create_app():
                             print('ничего не поменялось')
                             continue
                         else:
-                            for id in ids:
-                                if id in field.data:
+                            for idd in ids:
+                                if idd in field.data:
                                     continue
                                 else:
-                                    el = RefBooksElements.query.filter_by(id=id).first()
+                                    el = RefBooksElements.query.filter_by(id=idd).first()
                                     getattr(doc, field.name).remove(el)
                                     #db.session.commit()
                                     print('удалили', field.name, el)
-                            #new_ids = [el.id for el in getattr(doc, field.name)]
-                            for id in field.data:
-                                if id in ids: #new_ids:
+
+                            for idd in field.data:
+                                if idd in ids:
                                     continue
                                 else:
-                                    el = RefBooksElements.query.filter_by(id=id).first()
+                                    el = RefBooksElements.query.filter_by(id=idd).first()
                                     getattr(doc, field.name).append(el)
                                     db.session.merge(doc)
                                     #db.session.commit()
                                     print('добавили', field.name, el)
-                                    #break
 
-            #new_el = RefBooksElements.query.filter_by(id=22).first()
-            #doc.court_punishment.append(new_el)
             db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
-            #doc_dict = dict(itertools.islice(doc_dict.items(), 1, 26))
             title = doc.doc_name
         else:
             warning = "Документа с ID "+str(id)+" нет в базе данных"
@@ -416,17 +466,6 @@ def create_app():
         new_name = ''
         doc = Documents.query.filter_by(id=id).first()
         doc_dict = query_to_dict(doc)
-
-        fields = ['doc_name', 'create_date', 'decision_date', 'dec_book_num',
-                  'presence_plaintiff', 'presence_defendant', 'lawsuit_price',
-                  'compens', 'appeal', 'appeal_succ', 'appeal_date',
-                  'ap_decision_date', 'decision_exec_date']
-        dates = ['create_date', 'decision_date', 'appeal_date', 'ap_decision_date', 'decision_exec_date']
-        choices = {'guberniya': 7, 'uyezd': 8 , 'volost': 9, 'plaintiff_res_place': 10, 'defendant_res_place': 10,
-                   'court_result': 3, 'theme': 2, 'court_punishment': 4}
-        multiselect = ['theme', 'court_punishment']
-        checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"]
-        diff_fields = ["csrf_token", "doc_name", "submit"]
 
         form = EditMeta()
 
