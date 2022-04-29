@@ -45,8 +45,6 @@
         <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.14/js/bootstrap-multiselect.min.js"></script>-->
         <script src="{{ url_for('static', filename='bootstrap-multiselect/js/bootstrap-multiselect.js') }}"></script>
 
-
-
         <script>
             $(document).ready(function() {
                 var table = $('#docsTable').DataTable({
@@ -59,6 +57,7 @@
                     "bStateSave": true,
                     "fnStateSave": function (oSettings, oData) {
                         localStorage.setItem( 'DataTables', JSON.stringify(oData) );
+                        oData.oFilter.sSearch = "";
                     },
                     "fnStateLoad": function (oSettings) {
                         return JSON.parse( localStorage.getItem('DataTables') );
@@ -95,9 +94,19 @@
                     $("#searchForm").toggle("fast");
                 });
 
-                $("#resetForm").click(function() {
-                    $('input:checkbox').removeAttr('checked');
-                    $('form').get(0).reset();
+                // $("#resetForm").click(function() {
+                //    $('input:checkbox').removeAttr('checked');
+                //    $("select#searchForm").multiselect('refresh');
+                //});
+
+                $("#shortTable").on('click', function() {
+                    var cols = table.columns([4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
+                    $("#docsTable").css('width', '93vw');
+                    cols.visible(false);
+                });
+                $("#fullTable").on('click', function() {
+                    var cols = table.columns([4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
+                    cols.visible(true);
                 });
 
                 $(".multiple").multiselect(

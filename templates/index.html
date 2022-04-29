@@ -42,50 +42,56 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <button id="advancedSearch" class="btn btn-secondary dropdown-toggle mb-2" data-toggle="dropdown">Расширенный поиск&nbsp</button>
-            <span id="searchForm"> <!--style="display: none;">-->
-                <form action="" method="POST">
-                    {{ form.csrf_token() }}
-                    {% for field in form if field.name not in diff_fields %}
-                        {% if field.name in choices %}
-                            <span class="p-1">
-                                    {{ field.label(class="pt-2 pb-2 pr-2") }}
-                                    {{ field(class="multiple small", multiple="multiple") }}
-                            </span>
-                        {% elif field.name in checkboxes %}
-                            <span class="p-1">
-                                {{ field.label(class="pt-2 pb-2 pr-2") }}
-                                {{ field(class="align-middle") }}
-                            </span>
-                        {% else  %}
-                            <div class="input-group">
-                                {{ field.label(class="pt-2 pb-2 pr-2") }}
-                                <span>
-                                    {{ field(class="form-control pl-2") }}
-                                </span>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
+    <button id="advancedSearch" class="btn btn-secondary dropdown-toggle mb-2" data-toggle="dropdown">Расширенный поиск&nbsp</button>
+    <button class="btn btn-primary mb-2 ml-2" id="shortTable">Сокращенный вид</button>
+    <button class="btn btn-primary mb-2 ml-2" id="fullTable">Полный вид</button>
+    <form action="" method="POST" id="searchForm">
+        {{ form.csrf_token() }}
+        {% for field in form if field.name not in diff_fields %}
+            {% if loop.index % 3 == 1 %}
+                <div class="row">
+            {% endif %}
+            {% if field.name in choices %}
+                <div class="col">
+                    <span class="p-1">
+                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        {{ field(class="multiple small", multiple="multiple") }}
+                    </span>
+                </div>
+            {% elif field.name in checkboxes %}
+                <div class="col">
+                    <span class="p-1">
+                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        {{ field(class="align-middle") }}
+                    </span>
+                </div>
+            {% else  %}
+                <div class="input-group col">
+                    {{ field.label(class="pt-2 pb-2 pr-2") }}
+                    <span>
+                        {{ field(class="form-control pl-2") }}
+                    </span>
+                </div>
+            {% endif %}
+            {% if loop.index % 3 == 0 %}
+                </div>
+            {% endif %}
+        {% endfor %}
 
-                    <div class="form-group">
-                        {{ form.submit(class="btn btn-secondary mt-2") }}
-                        <span>
-                            <button id="resetForm" class="btn btn-secondary mt-2 ml-2">Очистить</button>
-                        </span>
-                    </div>
-
-                </form>
+        <div class="form-group">
+            {{ form.submit(class="btn btn-secondary mt-2") }}
+            <span>
+                <a id="resetForm" class="btn btn-secondary mt-2 ml-2" href="\">Очистить</a>
             </span>
         </div>
-    </div>
+    </form>
 
 
     <div class="table table-bordered table-hover table-responsive small">
     <table class="py-1" id="docsTable">
         <thead class="bg-light">
             <tr>
+                <th class="align-middle">№№</th>
                 <th class="align-middle text-center">Название документа</th>
                 {% for col in column_dict.values() %}
                 <th class="align-middle text-center">{{ col }}</th>
@@ -95,6 +101,7 @@
         <tbody>
         {% for doc in docs_list %}
             <tr>
+                <td class="align-middle text-center">{{ loop.index }}</td>
                 <td class="align-middle"><a href="/{{ doc['id'] }}">{{ doc['doc_name'] }}</a></td>
                 {% for value in column_dict.keys() %}
                 <td class="align-middle text-center">{% if doc[value] is sameas none or doc[value] is sameas '' %}

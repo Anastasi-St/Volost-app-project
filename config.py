@@ -10,3 +10,5 @@ class Config(object):
     USER_ENABLE_USERNAME = False
     USER_EMAIL_SENDER_NAME = USER_APP_NAME
     USER_EMAIL_SENDER_EMAIL = "noreply@example.com"
+    USER_ENABLE_REGISTER = False
+    USER_ENABLE_FORGOT_PASSWORD = False
