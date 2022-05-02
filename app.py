@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import *
 from config import Config
 import datetime
@@ -9,6 +11,7 @@ from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
 from forms import EditMeta, SearchForm
+import codecs
 
 def create_app():
     app = Flask(__name__)
@@ -144,65 +147,72 @@ def create_app():
     user_manager = UserManager(app, db, User)
     db.create_all()
 
-    if not User.query.filter(User.email == 'member1@example.com').first():
-        user = User(email='member1@example.com',
-                    email_confirmed_at=datetime.datetime.utcnow(),
-                    password=user_manager.hash_password('Password1'),
-                    first_name="Василий",
-                    last_name="Иванов",)
-        user.roles.append(Role(name="Beginner_Researcher"))
-        db.session.add(user)
-        db.session.commit()
+    #for text in Documents.query.with_entities(Documents.id, Documents.doc_text).all():
+    #    if text.doc_text:
+    #        with codecs.open("doc_texts\\text_"+str(text.id)+".txt", 'w', encoding='windows-1251') as f:
+    #            f.write(text.doc_text)
 
-    if not User.query.filter(User.email == 'member2@example.com').first():
-        user = User(email='member2@example.com',
-                    email_confirmed_at=datetime.datetime.utcnow(),
-                    password=user_manager.hash_password('Password1'),
-                    first_name="Иван",
-                    last_name="Васильев",)
-        user.roles.append(Role(name="Experienced_Researcher"))
-        db.session.add(user)
-        db.session.commit()
+
+
+#if not User.query.filter(User.email == 'member1@example.com').first():
+    #    user = User(email='member1@example.com',
+    #                email_confirmed_at=datetime.datetime.utcnow(),
+    #                password=user_manager.hash_password('Password1'),
+    #                first_name="Василий",
+    #                last_name="Иванов",)
+    #    user.roles.append(Role(name="Beginner_Researcher"))
+    #    db.session.add(user)
+    #    db.session.commit()
+
+    #if not User.query.filter(User.email == 'member2@example.com').first():
+    #    user = User(email='member2@example.com',
+    #                email_confirmed_at=datetime.datetime.utcnow(),
+    #                password=user_manager.hash_password('Password1'),
+    #                first_name="Иван",
+    #                last_name="Васильев",)
+    #    user.roles.append(Role(name="Experienced_Researcher"))
+    #    db.session.add(user)
+    #    db.session.commit()
 
         # Create 'admin@example.com' user with 'Admin' and 'Agent' roles
-    if not User.query.filter(User.email == 'admin@example.com').first():
-        user = User(email='admin@example.com',
-                    email_confirmed_at=datetime.datetime.utcnow(),
-                    password=user_manager.hash_password('Password1'),
-                    first_name="Николай",
-                    last_name="Николаев",)
-        user.roles.append(Role(name='Admin'))
-        db.session.add(user)
-        db.session.commit()
+    #if not User.query.filter(User.email == 'admin@example.com').first():
+    #    user = User(email='admin@example.com',
+    #                email_confirmed_at=datetime.datetime.utcnow(),
+    #                password=user_manager.hash_password('Password1'),
+    #                first_name="Николай",
+    #                last_name="Николаев",)
+    #    user.roles.append(Role(name='Admin'))
+    #    db.session.add(user)
+    #    db.session.commit()
 
-    def add_themes_punishments():
-        doc = Documents(doc_name='test',
-                        reg_date=datetime.datetime.utcnow(),)
-        doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
-        doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
-        db.session.add(doc)
-        db.session.commit()
+    #def add_themes_punishments():
+    #    doc = Documents(doc_name='test',
+    #                    reg_date=datetime.datetime.utcnow(),)
+    #    doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
+    #    doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
+    #    db.session.add(doc)
+    #    db.session.commit()
 
 
-    def get_roles(cur_user):
-        roles_list = cur_user.roles
-        user_roles = []
-        for role in roles_list:
-            user_roles.append(Role.query.filter_by(id=role.id).first().name)
-        return user_roles
+    #def get_roles(cur_user):
+    #    roles_list = cur_user.roles
+    #    user_roles = []
+    #    for role in roles_list:
+    #        user_roles.append(Role.query.filter_by(id=role.id).first().name)
+    #    return user_roles
 
-    def get_text():
-        doc = ''
-        warning = ''
-        if request.method == "GET":
-            doc_id = request.args.get('doc_id')
-            if doc_id:
-                doc_id = int(doc_id)
-                doc = Documents.query.filter_by(id=doc_id).first()
-                if not doc:
-                    warning = "Текста с id "+str(doc_id)+" нет в базе данных"
-                    doc = ''
-        return doc, warning
+    #def get_text():
+    #    doc = ''
+    #    warning = ''
+    #    if request.method == "GET":
+    #        doc_id = request.args.get('doc_id')
+    #        if doc_id:
+    #            doc_id = int(doc_id)
+    #            doc = Documents.query.filter_by(id=doc_id).first()
+    #            if not doc:
+    #                warning = "Текста с id "+str(doc_id)+" нет в базе данных"
+    #                doc = ''
+    #   return doc, warning
 
     th_names = ['Дата регистрации документа в базе данных', 'Губерния', 'Уезд', 'Волость',
                 'Место жительства истца', 'Место жительства ответчика', 'Дата подачи заявления', 'Дата вынесения решения',
@@ -418,13 +428,13 @@ def create_app():
                         if getattr(doc, field.name) == field.data:
                             continue
                         else:
-                            print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
+                            #print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
                             setattr(doc, field.name, field.data)
                     else:
                         ids = [el.id for el in getattr(doc, field.name)]
-                        print('айдис —', field.name, ids)
+                        #print('айдис —', field.name, ids)
                         if field.data == ids:
-                            print('ничего не поменялось')
+                            #print('ничего не поменялось')
                             continue
                         else:
                             for idd in ids:
@@ -434,7 +444,7 @@ def create_app():
                                     el = RefBooksElements.query.filter_by(id=idd).first()
                                     getattr(doc, field.name).remove(el)
                                     #db.session.commit()
-                                    print('удалили', field.name, el)
+                                    #print('удалили', field.name, el)
 
                             for idd in field.data:
                                 if idd in ids:
@@ -444,7 +454,7 @@ def create_app():
                                     getattr(doc, field.name).append(el)
                                     db.session.merge(doc)
                                     #db.session.commit()
-                                    print('добавили', field.name, el)
+                                    #print('добавили', field.name, el)
 
             db.session.commit()
         if doc:
