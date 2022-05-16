@@ -11,7 +11,6 @@ from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
 from forms import EditMeta, SearchForm
-import codecs
 
 def create_app():
     app = Flask(__name__)
@@ -40,9 +39,9 @@ def create_app():
 
     class UserRoles(db.Model):
         __tablename__ = 'user_roles'
-        id = db.Column(db.Integer(), primary_key=True)
-        user_id = db.Column(db.Integer(), db.ForeignKey('users.id', ondelete='CASCADE'))
-        role_id = db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'))
+        #id = db.Column(db.Integer(), primary_key=True)
+        user_id = db.Column(db.Integer(), db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+        role_id = db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'), primary_key=True)
 
     class ReferenceBooks(db.Model):
         __tablename__ = 'reference_books'
@@ -147,6 +146,19 @@ def create_app():
     user_manager = UserManager(app, db, User)
     db.create_all()
 
+    def calculate_waiting():
+        for doc in Documents.query.all():
+            if doc.decision_date and doc.create_date:
+                doc.wait_time = (doc.decision_date - doc.create_date).days
+            if doc.ap_decision_date and doc.appeal_date:
+                doc.ap_dec_time = (doc.ap_decision_date - doc.appeal_date).days
+            if doc.decision_exec_date and doc.decision_date:
+                doc.decision_exec_time = (doc.decision_exec_date - doc.decision_date).days
+        db.session.commit()
+
+    #calculate_waiting()
+
+
     #for text in Documents.query.with_entities(Documents.id, Documents.doc_text).all():
     #    if text.doc_text:
     #        with codecs.open("doc_texts\\text_"+str(text.id)+".txt", 'w', encoding='windows-1251') as f:
@@ -216,12 +228,12 @@ def create_app():
 
     th_names = ['Дата регистрации документа в базе данных', 'Губерния', 'Уезд', 'Волость',
                 'Место жительства истца', 'Место жительства ответчика', 'Дата подачи заявления', 'Дата вынесения решения',
-                'Время ожидания', 'Темы',
+                'Время ожидания, дни', 'Темы',
                 'Номер по книге решений суда', 'Присутствие истца', 'Присутствие ответчика',
                 'Цена предъявленного иска в рублях', 'Результат суда', 'Наказания по суду',
                 'Сумма присуждённого возмещения в рублях',
                 'Обжаловано', 'Обжалование успешно', 'Дата подачи апелляции', 'Дата решения по апелляции',
-                'Время ожидания решения апелляции', 'Дата исполнения решения', 'Время ожидания решения']
+                'Время ожидания решения апелляции, дни', 'Дата исполнения решения', 'Время ожидания решения, дни']
     not_displayed = ['id', 'doc_name', 'owner', 'doc_text', 'img_names']
     column_names = [x for x in Documents.__table__.columns.keys() if x not in not_displayed]
     column_names.insert(column_names.index('dec_book_num'), 'themes')
@@ -264,7 +276,9 @@ def create_app():
                                                   Documents.ap_decision_date,
                                                   Documents.ap_dec_time,
                                                   Documents.decision_exec_date,
-                                                  Documents.decision_exec_time)\
+                                                  Documents.decision_exec_time,
+                                                  Documents.doc_text, # change!!
+                                                  Documents.img_names)\
             .join(guberniya, guberniya.id == Documents.guberniya, isouter=True)\
             .join(uyezd, uyezd.id == Documents.uyezd, isouter=True)\
             .join(volost, volost.id == Documents.volost, isouter=True)\
@@ -344,7 +358,9 @@ def create_app():
                'court_result': 3, 'theme': 2, 'court_punishment': 4}
     multiselect = ['theme', 'court_punishment']
     checkboxes = ["presence_plaintiff", "presence_defendant", "appeal", "appeal_succ"]
+    checkboxes_search = ['img_names', 'doc_text']
     diff_fields = ["csrf_token", "doc_name", "submit"]
+    waits = ['wait_time', 'ap_dec_time', 'decision_exec_time']
 
     @app.route('/', methods=['GET', 'POST'])
     def index():
@@ -371,6 +387,11 @@ def create_app():
                         if field.name in multiselect:
                             els = [el.id for el in getattr(doc, field.name)]
                             val.append((els, field.data))
+                        elif field.name in checkboxes_search:
+                            if getattr(doc, field.name):
+                                val.append((True, field.data))
+                            else:
+                                val.append((False, field.data))
                         else:
                             val.append((getattr(doc, field.name), field.data))
                     values.append(val)
@@ -412,6 +433,9 @@ def create_app():
                                choices=choices,
                                diff_fields=diff_fields,
                                checkboxes=checkboxes,
+                               checkboxes_search=checkboxes_search,
+                               dates=dates,
+                               waits=waits,
                                form=form)
 
     @app.route('/<int:id>', methods=['GET', 'POST'])
@@ -473,7 +497,7 @@ def create_app():
     @app.route('/edit/<int:id>', methods=['GET', 'POST'])
     @roles_required(['Admin'])
     def edit(id):
-        new_name = ''
+
         doc = Documents.query.filter_by(id=id).first()
         doc_dict = query_to_dict(doc)
 
@@ -509,6 +533,11 @@ def create_app():
                                diff_fields=diff_fields,
                                multiselect=multiselect)
 
+    @app.route('/linguistic_info')
+    def linguistic_info():
+        return render_template('linguistic_info.html',
+                               title="Взгляд лингвиста")
+
     @app.route('/research')
     def research():
         return render_template('research.html',
@@ -518,6 +547,16 @@ def create_app():
     def about_project():
         return render_template('about_project.html',
                                title="О проекте")
+
+    @app.route('/ref_books')
+    def ref_books():
+        return render_template('ref_books.html',
+                               title="Управление справочниками")
+
+    @app.route('/activity_log')
+    def activity_log():
+        return render_template('activity_log.html',
+                               title="Журнал действий")
 
     # @app.route('/members')
     # @login_required
@@ -545,4 +584,5 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    #app.jinja_env.add_extension('jinja2.ext.do')
     app.run()

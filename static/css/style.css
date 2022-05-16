@@ -41,3 +41,7 @@ div.table {
 .multiselect-container>li>a>label {
     padding-left: 6px !important;
 }
+
+a#textButton:hover {
+    cursor: pointer !important;
+}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% set active_page = 'linguistic_info' %}
+{% block content %}
+    <h2>Статистика</h2>
+    <canvas id="myChart" width="800" height="500"></canvas>
+{% endblock %}
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/chart_script.js') }}" charset="utf-8"></script>
+{% endblock %}

@@ -29,15 +29,33 @@
                                     {% endif %}
         </p>
 
-        <hr>
-        {% if doc_dict['doc_text'] %}
-            <small>{{ doc_dict['doc_text']|safe }}</small>
-        {% else %}
-            <h3>Тескт документа не указан</h3>
-        {% endif %}
+        <div class="mb-4">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" id="textButton" href="#">Текст</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="imgButton" href="#">Изображения</a>
+                </li>
+            </ul>
+        </div>
+
+        <div id="text">
+            {% if doc_dict['doc_text'] %}
+                <small>{{ doc_dict['doc_text']|safe }}</small>
+            {% else %}
+                <h3>Тескт документа не указан</h3>
+            {% endif %}
+        </div>
+
+        <div id="img">
+            <p>тут будут изображения</p>
+        </div>
+
     {% elif warning %}
         <p>{{ warning }}</p>
     {% endif %}
+
 
     {% if current_user.is_authenticated %}
         <hr>

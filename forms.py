@@ -62,6 +62,8 @@ class SearchForm(FlaskForm):
     #ap_decision_date
     #decision_exec_date
     #wait_time
+    doc_text = BooleanField("Наличие текста: ", false_values=(False,))
+    img_names = BooleanField("Наличие изображений: ", false_values=(False,))
 
     submit = SubmitField("Искать")
 
