@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+    {% if doc_dict %}
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('index') }}">Документы</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/{{ doc_dict['id'] }}">{{ doc_dict['doc_name'] }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#">Редактировать текст</a>
+            </li>
+        </ul>
+
+        <form method="POST" action="/{{ doc_dict['id'] }}">
+            <textarea id="summernote" name="editordata">
+                {%- if doc_dict['doc_text'] %}
+                    {{ doc_dict['doc_text'] }}
+                {% endif -%}
+            </textarea>
+            <div class="mt-2">
+                <input class="btn btn-secondary mr-1" type="submit" value="Сохранить">
+                <a class="btn btn-primary" href="/{{ doc_dict['id'] }}">Отмена</a>
+            </div>
+
+
+        </form>
+
+    {% else %}
+        <h4 class="p-3">{{ warning }}</h4>
+    {% endif %}
+
+    {% block scripts %}
+
+    {% endblock %}
+{% endblock %}

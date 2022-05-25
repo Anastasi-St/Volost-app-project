@@ -444,43 +444,50 @@ def create_app():
         doc = Documents.query.filter_by(id=id).first()
         diff_fields = ['csrf_token', 'submit']
         if request.method == "POST":
-            form = EditMeta(request.form)
+            if 'editordata' in request.form:
+                new_doc_text = request.form.get('editordata')
+                #print(new_doc_text)
+                doc.doc_text = new_doc_text
+                db.session.commit()
+            elif 'doc_name' in request.form:
+                form = EditMeta(request.form)
 
-            for field in form:
-                if field.name not in diff_fields:
-                    if type(field.data) != list:
-                        if getattr(doc, field.name) == field.data:
-                            continue
+                #if form.validate():
+                for field in form:
+                    if field.name not in diff_fields:
+                        if type(field.data) != list:
+                            if getattr(doc, field.name) == field.data:
+                                continue
+                            else:
+                                #print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
+                                setattr(doc, field.name, field.data)
                         else:
-                            #print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
-                            setattr(doc, field.name, field.data)
-                    else:
-                        ids = [el.id for el in getattr(doc, field.name)]
-                        #print('айдис —', field.name, ids)
-                        if field.data == ids:
-                            #print('ничего не поменялось')
-                            continue
-                        else:
-                            for idd in ids:
-                                if idd in field.data:
-                                    continue
-                                else:
-                                    el = RefBooksElements.query.filter_by(id=idd).first()
-                                    getattr(doc, field.name).remove(el)
-                                    #db.session.commit()
-                                    #print('удалили', field.name, el)
+                            ids = [el.id for el in getattr(doc, field.name)]
+                            #print('айдис —', field.name, ids)
+                            if field.data == ids:
+                                #print('ничего не поменялось')
+                                continue
+                            else:
+                                for idd in ids:
+                                    if idd in field.data:
+                                        continue
+                                    else:
+                                        el = RefBooksElements.query.filter_by(id=idd).first()
+                                        getattr(doc, field.name).remove(el)
+                                        #db.session.commit()
+                                        #print('удалили', field.name, el)
 
-                            for idd in field.data:
-                                if idd in ids:
-                                    continue
-                                else:
-                                    el = RefBooksElements.query.filter_by(id=idd).first()
-                                    getattr(doc, field.name).append(el)
-                                    db.session.merge(doc)
-                                    #db.session.commit()
-                                    #print('добавили', field.name, el)
+                                for idd in field.data:
+                                    if idd in ids:
+                                        continue
+                                    else:
+                                        el = RefBooksElements.query.filter_by(id=idd).first()
+                                        getattr(doc, field.name).append(el)
+                                        db.session.merge(doc)
+                                        #db.session.commit()
+                                        #print('добавили', field.name, el)
 
-            db.session.commit()
+                    db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
             title = doc.doc_name
@@ -494,13 +501,27 @@ def create_app():
                                title=title,
                                warning=warning)
 
+    @app.route('/text/<int:id>', methods=['GET', 'POST'])
+    @roles_required(['Admin'])
+    def text(id):
+        doc = Documents.query.filter_by(id=id).first()
+
+        if doc:
+            doc_dict = query_to_dict(doc)
+        else:
+            doc_dict = {}
+
+        warning = "Документа с ID "+str(id)+" нет в базе данных"
+        return render_template('edit_text.html',
+                               doc_dict=doc_dict,
+                               title="Редактировать текст",
+                               warning=warning)
+
     @app.route('/edit/<int:id>', methods=['GET', 'POST'])
     @roles_required(['Admin'])
     def edit(id):
 
         doc = Documents.query.filter_by(id=id).first()
-        doc_dict = query_to_dict(doc)
-
         form = EditMeta()
 
         def set_form_data(form):
@@ -517,21 +538,25 @@ def create_app():
                                                                        RefBooksElements.ref_value).filter_by(id=el.id).first()
                             set_values.append(new[0])
                         field.data = set_values
-                        #print(set_values)
                     else:
                         field.data = getattr(doc, field.name)
 
-        if doc_dict:
+        if doc:
+            doc_dict = query_to_dict(doc)
             set_form_data(form)
         else:
-            warning = "Такого документа нет"
+            doc_dict = {}
+
+        warning = "Документа с ID "+str(id)+" нет в базе данных"
+
         return render_template('edit_meta.html',
                                title="Редактировать метаданные",
                                doc_dict=doc_dict,
                                form=form,
                                checkboxes=checkboxes,
                                diff_fields=diff_fields,
-                               multiselect=multiselect)
+                               multiselect=multiselect,
+                               warning=warning)
 
     @app.route('/linguistic_info')
     def linguistic_info():

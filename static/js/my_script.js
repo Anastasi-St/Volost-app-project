@@ -86,8 +86,15 @@ $(document).ready(function() {
           }
         });
 
-    $( "#amount" ).val( (new Date($( "#slider-range" ).slider( "values", 0 )*1000).toDateString()) +
+    $("#amount").val( (new Date($( "#slider-range" ).slider( "values", 0 )*1000).toDateString()) +
           " - " + (new Date($( "#slider-range" ).slider( "values", 1 )*1000)).toDateString());
+
+    $("#img").hide();
+    $('.gallery-image').elevateZoom({
+        zoomWindowWidth: 600,
+        zoomWindowHeight: 400,
+        scrollZoom: true
+    });
 
     $("#textButton").click(function() {
         if (!$("#textButton").hasClass("active")) {
@@ -105,5 +112,23 @@ $(document).ready(function() {
             $("#imgButton").addClass("active");
             $("#img").show();
         };
+    });
+
+    $('#summernote').summernote({
+        toolbar: [
+          ['style', ['style']],
+          ['font', ['bold', 'italic', 'underline', 'clear', 'strikethrough']],
+          ['fontname', ['fontname']],
+          ['fontsize', ['fontsize']],
+          ['color', ['color']],
+          ['para', ['ul', 'ol', 'paragraph']],
+          ['table', ['table']],
+          ['insert', ['hr']],
+          ['height', ['height']],
+          ['view', ['fullscreen', 'codeview', 'help']],
+        ],
+        fontSizes: ['8', '9', '10', '11', '12', '14', '16', '18', '24', '36', '48' , '64', '82', '150'],
+        placeholder: "Текст документа...",
+        lang: 'ru-RU'
     });
 });

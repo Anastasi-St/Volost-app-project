@@ -8,7 +8,7 @@ $(document).ready(function() {
         const data = {
             labels: labels,
             datasets: [{
-                label: 'Dataset',
+                label: 'Parts of speech',
                 backgroundColor: 'rgb(255, 99, 132)',
                 borderColor: 'rgb(255, 99, 132)',
                 data: Object.values(stats),

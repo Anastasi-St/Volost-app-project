@@ -1,37 +1,9 @@
 {% extends "base.html" %}
-{% set active_page = 'index' %}
+{%- set active_page = 'index' -%}
+
 {% block content %}
 
-    <!-- <p><a href="{{ url_for('user.register') }}">{% trans %}Register{% endtrans %}</a></p> -->
-    <!--{% if current_user.is_authenticated %}
-        <p>Статус:
-            {% if user_roles %}
-                {{ user_roles|join(', ') }}
-            {% else %}
-                нет
-            {% endif %}
-        </p>
-    {% endif %}-->
-    <!--<form method="GET">
-        <p><label for="doc_id">ID: </label>
-        <input type="text" id="doc_id" name="doc_id"></p>
-        <p><input type="submit" value="Искать"></p>
-    </form>-->
-    <!--<table border="1" style="border-collapse:collapse">
-        <tr>
-            <th>id дока</th>
-            <th>тема</th>
-        </tr>
-        {% for doc in docs_themes %}
-            <tr>
-                <td>{{ doc['id'] }}</td>
-                <td>{{ doc['themes']|join(', ') }}</td>
-            </tr>
-        {% endfor %}
-    </table>-->
-    {% set short_dates = ["create_date", "decision_date", "appeal_date", "ap_decision_date", "decision_exec_date"] %}
-
-    <p id="dct"></p>
+    {%- set short_dates = ["create_date", "decision_date", "appeal_date", "ap_decision_date", "decision_exec_date"] -%}
 
     <div class="row">
         <div class="col-6">

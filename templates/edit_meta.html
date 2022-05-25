@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% set active_page = 'index' %}
 {% block content %}
     {% if doc_dict %}
     <ul class="breadcrumb">
@@ -7,21 +6,24 @@
             <a href="{{ url_for('index') }}">Документы</a>
         </li>
         <li class="breadcrumb-item">
-            <a href="/{{doc_dict['id']}}">{{ doc_dict['doc_name'] }}</a>
+            <a href="/{{ doc_dict['id'] }}">{{ doc_dict['doc_name'] }}</a>
         </li>
         <li class="breadcrumb-item">
             <a href="#">Редактировать метаданные</a>
         </li>
     </ul>
 
-    <h2 class="mb-4" id="doc_name">{{ doc_dict['doc_name'] }}</h2>
+    <div class="d-flex mb-3">
+        <h2 class="mb-2 d-flex" id="doc_name">{{ doc_dict['doc_name'] }}</h2>
+        <p style="color:red;" class="small mb-0 pt-3 pl-3">Обязательные поля *</p>
+    </div>
 
     {% if form %}
     <!--<div class="row"></div>-->
         <form action="/{{ doc_dict['id'] }}" method="POST">
             {{ form.csrf_token() }}
             <div class="input-group">
-                {{ form.doc_name.label(class="pt-2 pb-2 pr-2") }}
+                {{ form.doc_name.label(class="pt-2 pb-2 pr-2") }} <span style="color:red;" class="pr-2">*</span>
                 {{ form.doc_name(class="form-control") }}
             </div>
             {% for field in form if field.name not in diff_fields %}
@@ -45,14 +47,13 @@
 
             <div class="form-group">
                 {{ form.submit(class="btn btn-secondary mt-2") }}
+                <a href="/{{ doc_dict['id'] }}" class="btn btn-primary mt-2 ml-2">Отмена</a>
             </div>
-
-            <!--{% for error in form.doc_name.errors %}
-            <p>{{ error }}</p>
-            {% endfor %} -->
         </form>
+
     {% endif %}
     {% else %}
+        <h4 class="p-3">{{ warning }}</h4>
     {% endif %}
 
 {% endblock %}

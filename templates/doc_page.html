@@ -42,24 +42,34 @@
 
         <div id="text">
             {% if doc_dict['doc_text'] %}
-                <small>{{ doc_dict['doc_text']|safe }}</small>
+                {{ doc_dict['doc_text']|safe }}
             {% else %}
                 <h3>Тескт документа не указан</h3>
             {% endif %}
         </div>
 
         <div id="img">
-            <p>тут будут изображения</p>
+            {% if doc_dict['img_names'] %}
+                {% for img in doc_dict['img_names'].split(', ') %}
+                    <img src="{{ url_for('static', filename='images/doc_images/'+img) }}"
+                         data-zoom-image="{{ url_for('static', filename='images/doc_images/'+img) }}"
+                         class="gallery-image m-2"
+                         alt="Не удалось загрузить изображение"
+                         width="50%" height="50%">
+                {% endfor %}
+            {% else %}
+                <h3>У документа пока что нет изображений</h3>
+            {% endif %}
         </div>
 
-    {% elif warning %}
-        <p>{{ warning }}</p>
+    {% if current_user.is_authenticated %}
+    <hr>
+    <a class="btn btn-secondary mr-2" href="/text/{{ doc_dict['id'] }}">Редактировать текст</a>
+    <a class="btn btn-secondary" href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
     {% endif %}
 
-
-    {% if current_user.is_authenticated %}
-        <hr>
-        <a class="btn btn-secondary" href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
+    {% elif warning %}
+        <h4 class="p-3">{{ warning }}</h4>
     {% endif %}
 
 {% endblock %}
