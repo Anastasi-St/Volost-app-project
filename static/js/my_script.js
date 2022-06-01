@@ -9,7 +9,7 @@ $(document).ready(function() {
         "bStateSave": true,
         "fnStateSave": function (oSettings, oData) {
             localStorage.setItem( 'DataTables', JSON.stringify(oData) );
-            //oData.oFilter.sSearch = "";
+            oData.oFilter.sSearch = "";
         },
         "fnStateLoad": function (oSettings) {
             return JSON.parse( localStorage.getItem('DataTables') );
@@ -36,6 +36,11 @@ $(document).ready(function() {
         .column(1)
         .search(value)
         .draw();
+    });
+
+    $("#clearButton").click(function() {
+        table.column(1).search("").draw();
+        $("#searchBar").val('');
     });
 
     $("#searchBar").keypress(function(e) {
@@ -74,6 +79,43 @@ $(document).ready(function() {
             nSelectedText: "выбрано"
         }
     );
+
+    //$(".single").val('').multiselect(
+    //    {
+    //        nonSelectedText: "Ничего не выбрано",
+    //        deselectAll: false,
+    //        maxHeight: 150
+    //    }
+    //);
+
+    //$("#defendant_res_place").multiselect({
+    //        on: {
+    //            change: function(option, checked) {
+    //                var values = [];
+    //                $("#defendant_res_place option").each(function() {
+    //                    if ($(this).val() !== option.val()) {
+    //                        values.push($(this).val());
+    //                    }
+    //                });
+
+    //                $("#defendant_res_place").multiselect('deselect', values);
+    //            }
+    //        },
+    //        nonSelectedText: "Ничего не выбрано",
+    //        maxHeight: 150
+    //    }
+    //);
+
+    //var single_fields = ['guberniya', 'uyezd', 'volost', 'plaintiff_res_place', 'defendant_res_place', 'court_result']
+
+    //$.each( single_fields, function(index, value){
+    //    $("#"+value+"_deselect").click(function() {
+    //        $("#"+value+" option:selected").each(function() {
+    //            $(this).prop('selected', false);
+    //        });
+    //        $("select#"+value).multiselect('refresh');
+    //    });
+    //});
 
     $( "#slider-range" ).slider({
           range: true,
@@ -114,21 +156,24 @@ $(document).ready(function() {
         };
     });
 
-    $('#summernote').summernote({
-        toolbar: [
-          ['style', ['style']],
-          ['font', ['bold', 'italic', 'underline', 'clear', 'strikethrough']],
-          ['fontname', ['fontname']],
-          ['fontsize', ['fontsize']],
-          ['color', ['color']],
-          ['para', ['ul', 'ol', 'paragraph']],
-          ['table', ['table']],
-          ['insert', ['hr']],
-          ['height', ['height']],
-          ['view', ['fullscreen', 'codeview', 'help']],
-        ],
-        fontSizes: ['8', '9', '10', '11', '12', '14', '16', '18', '24', '36', '48' , '64', '82', '150'],
-        placeholder: "Текст документа...",
-        lang: 'ru-RU'
+    $('#summernote, #doc_text').each(function() {
+        $(this).summernote({
+               toolbar: [
+                 ['style', ['style']],
+                 ['font', ['bold', 'italic', 'underline', 'clear', 'strikethrough']],
+                 ['fontname', ['fontname']],
+                 ['fontsize', ['fontsize']],
+                 ['color', ['color']],
+                 ['para', ['ul', 'ol', 'paragraph']],
+                 ['table', ['table']],
+                 ['insert', ['hr']],
+                 ['height', ['height']],
+                 ['view', ['fullscreen', 'codeview', 'help']],
+               ],
+               fontSizes: ['8', '9', '10', '11', '12', '14', '16', '18', '24', '36', '48' , '64', '82', '150'],
+               placeholder: "Текст документа...",
+               height: 300,
+               lang: 'ru-RU'
+       });
     });
 });

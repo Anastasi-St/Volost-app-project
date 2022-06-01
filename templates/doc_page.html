@@ -49,10 +49,10 @@
         </div>
 
         <div id="img">
-            {% if doc_dict['img_names'] %}
-                {% for img in doc_dict['img_names'].split(', ') %}
-                    <img src="{{ url_for('static', filename='images/doc_images/'+img) }}"
-                         data-zoom-image="{{ url_for('static', filename='images/doc_images/'+img) }}"
+            {% if doc_files %}
+                {% for img in doc_files %}
+                    <img src="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
+                         data-zoom-image="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
                          class="gallery-image m-2"
                          alt="Не удалось загрузить изображение"
                          width="50%" height="50%">
@@ -64,8 +64,14 @@
 
     {% if current_user.is_authenticated %}
     <hr>
-    <a class="btn btn-secondary mr-2" href="/text/{{ doc_dict['id'] }}">Редактировать текст</a>
-    <a class="btn btn-secondary" href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
+    <a class="btn btn-secondary mr-2 {%- if not active_button %} disabled{%- endif -%}"
+       href="/text/{{ doc_dict['id'] }}">Редактировать текст</a>
+    <a class="btn btn-secondary {%- if not active_button %} disabled{%- endif -%}"
+       href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
+    {% endif %}
+
+    {% if 'Admin' in current_user.roles %}
+    <p>{{ current_user.roles }}</p>
     {% endif %}
 
     {% elif warning %}

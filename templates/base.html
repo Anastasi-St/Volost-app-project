@@ -72,6 +72,7 @@
         {% endblock %}
     </head>
     <body>
+
         {% set nav_bar = [
             ('index', 'Документы'),
             ('linguistic_info', 'Взгляд лингвиста'),
@@ -83,19 +84,21 @@
         -%}
         {% set admin_pages = ['ref_books', 'activity_log'] -%}
         {% set active_page = active_page|default('index') -%}
-        {% set roles = [] %}
-        {% for role in current_user.roles %}
-            <div style="display:none;">{{ roles.append(role.name) }}</div>
-        {% endfor %}
+        {% set roles = [] -%}
+        {% if current_user.is_authenticated %}
+            {% for role in current_user.roles %}
+                <span style="display: none;">{{ roles.append(role.name) }}</span>
+            {% endfor %}
+        {% endif %}
 
     <div class="container-fluid px-4 py-3">
         <div class="clearfix pb-3">
             <div class="float-left">
                 <ul class="nav nav-tabs">
                     {% for href, caption in nav_bar %}
-                        {% if href in admin_pages and 'Admin' in roles or href not in admin_pages %}
+                        {% if href in admin_pages and 'Admin' in roles or 'Experienced_Researcher' in roles or 'Superadmin' in roles or href not in admin_pages %}
                             <li class="nav-item">
-                                <a class="nav-link{% if href == active_page %} active"{% endif %}" href="{{ url_for(href) }}">{{ caption|e }}</a>
+                                <a class="nav-link{% if href == active_page %} active{% endif %}" href="{{ url_for(href) }}">{{ caption|e }}</a>
                             </li>
                         {% else  -%}
                         {% endif -%}
@@ -125,6 +128,19 @@
                 </div>
             </div>
         </div>
+
+        {% with errors = get_flashed_messages(category_filter=["wrong_filetype"]) %}
+            {% if errors %}
+                {% for error in errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <span>{{ error }}</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            &times;
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         {% block content%}
 

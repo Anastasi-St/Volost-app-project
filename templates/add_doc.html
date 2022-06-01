@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <div class="d-flex mb-3">
+        <h3>Новый документ</h3>
+        <span style="color:red;" class="small mb-0 pt-2 pl-3">Обязательные поля *</span>
+        <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
+    </div>
+
+    <form enctype="multipart/form-data" action="" method="POST">
+        {{ form.csrf_token() }}
+        <div class="input-group">
+          {{ form.doc_name.label(class="pt-2 pb-2 pr-2") }} <span style="color:red;" class="pr-2">*</span>
+          {{ form.doc_name(class="form-control") }}
+        </div>
+        {% for field in form if field.name not in diff_fields %}
+            {% if field.name in multiselect %}
+                {{ field.label(class="pt-2 pb-2 pr-2") }}
+                {{ field(class="multiple", multiple="multiple") }}
+            {% elif field.name in checkboxes %}
+                <div class="input-group">
+                  {{ field.label(class="pt-2 pb-2 pr-2") }}
+                  <div class="p-2">{{ field(class="align-middle") }}</div>
+                </div>
+            {% else  %}
+                <div class="input-group">
+                    {{ field.label(class="pt-2 pb-2 pr-2") }}
+                    <span>{{ field(class="form-control pl-2") }}</span>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <div class="input-group">
+            {{ form.img_names.label(class="pt-2 pb-2 pr-2") }}
+            <span>{{ form.img_names(class="form-control-file pl-2 pt-2") }}</span>
+        </div>
+
+        {{ form.doc_text.label(class="pt-2 pb-2 pr-2") }}
+        {{ form.doc_text }}
+
+        <div class="form-group mt-2">
+          {{ form.add_submit(class="btn btn-secondary mt-2") }}
+          <a href="/" class="btn btn-primary mt-2 ml-2">Отмена</a>
+        </div>
+    </form>
+
+{% endblock %}

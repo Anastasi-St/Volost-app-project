@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+    <h4 class="mb-3">Вы не можете редактировать документ с ID {{ id }}</h4>
+    <a class="btn btn-secondary" href="/{{ id }}">Вернуться к документу</a>
+{% endblock %}

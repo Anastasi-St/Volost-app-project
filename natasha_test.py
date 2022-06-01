@@ -86,10 +86,18 @@ def all_statistics():
     stats = {k: v for k, v in sorted(stats.items(), key=lambda item: item[1])}
     return stats
 
-stats = all_statistics()
+#stats = all_statistics()
 
 def dict_to_json(dct):
     with open('statistics.json', 'w') as f:
         json.dump(dct, f, indent=4)
 
 #dict_to_json(stats)
+#from urllib import request
+#u2 = request.urlopen("https://www.kinopoisk.ru/film/342/")
+#site = u2.read()
+#u2.close()
+#print(site)
+#soup = BeautifulSoup(site, "html.parser")
+#for s in soup.select('img.film-poster'):
+#    print(s)

@@ -2,15 +2,17 @@
 
 from flask import *
 from config import Config
+from werkzeug.utils import secure_filename
 import datetime
+import os
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import aliased
-from sqlalchemy import func
 from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
-from forms import EditMeta, SearchForm
+from forms import EditMeta, SearchForm, AddDoc
 
 def create_app():
     app = Flask(__name__)
@@ -117,7 +119,7 @@ def create_app():
         filename = db.Column(db.String(255), nullable=False)
         load_date = db.Column(db.DateTime(), nullable=False)
         document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
-        filetype = db.Column(db.String(100), nullable=False)
+        filetype = db.Column(ENUM('jpg', 'jpeg', 'png', name='file_type', create_type=False), nullable=False)
 
     class ActivityLog(db.Model):
         __tablename__ = 'activity_log'
@@ -125,7 +127,8 @@ def create_app():
         user = db.Column(db.Integer(), db.ForeignKey('users.id'), nullable=False)
         datetime = db.Column(db.DateTime(), nullable=False)
         document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
-        doc_type = db.Column(db.String(100), nullable=False) # переименовала!!
+        doc_type = db.Column(ENUM('edit_meta', 'edit_text', 'edit_pics', 'add_doc', 'delete_doc',
+                                  name='act_type', create_type=False), nullable=False) # переименовала!!
 
     class Participants(db.Model):
         __tablename__ = 'participants'
@@ -142,22 +145,40 @@ def create_app():
         ref_element = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False) # переименовала!!
         #ref_book = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.ref_book'), nullable=False)
 
-
     user_manager = UserManager(app, db, User)
     db.create_all()
 
-    def calculate_waiting():
-        for doc in Documents.query.all():
-            if doc.decision_date and doc.create_date:
-                doc.wait_time = (doc.decision_date - doc.create_date).days
-            if doc.ap_decision_date and doc.appeal_date:
-                doc.ap_dec_time = (doc.ap_decision_date - doc.appeal_date).days
-            if doc.decision_exec_date and doc.decision_date:
-                doc.decision_exec_time = (doc.decision_exec_date - doc.decision_date).days
+    def calculate_waiting(doc):
+        if doc.decision_date and doc.create_date:
+            doc.wait_time = (doc.decision_date - doc.create_date).days
+        if doc.ap_decision_date and doc.appeal_date:
+            doc.ap_dec_time = (doc.ap_decision_date - doc.appeal_date).days
+        if doc.decision_exec_date and doc.decision_date:
+            doc.decision_exec_time = (doc.decision_exec_date - doc.decision_date).days
         db.session.commit()
 
-    #calculate_waiting()
+    def fill_docfiles(doc):
+        if doc.img_names:
+            filenames = doc.img_names.split(', ')
+            for name in filenames:
+                doc_file = DocumentsFiles()
+                doc_file.filename = name
+                doc_file.load_date = datetime.datetime(2022, 4, 5)
+                doc_file.document = doc.id
+                doc_file.filetype = name.split('.')[-1]
+                db.session.add(doc_file)
+                db.session.commit()
 
+    #for doc in Documents.query.all():
+    #    fill_docfiles(doc)
+    #    calculate_waiting(doc)
+
+    #def insert_owner(doc):
+    #    doc.owner = 3
+    #    db.session.commit()
+
+    #for doc in Documents.query.all():
+    #    insert_owner(doc)
 
     #for text in Documents.query.with_entities(Documents.id, Documents.doc_text).all():
     #    if text.doc_text:
@@ -362,6 +383,8 @@ def create_app():
     diff_fields = ["csrf_token", "doc_name", "submit"]
     waits = ['wait_time', 'ap_dec_time', 'decision_exec_time']
 
+    superior_roles = ['Experienced_Researcher', 'Admin', 'Superadmin']
+
     @app.route('/', methods=['GET', 'POST'])
     def index():
         docs, docs_themes, docs_punishments = get_all_docs()
@@ -443,12 +466,26 @@ def create_app():
         warning = ''
         doc = Documents.query.filter_by(id=id).first()
         diff_fields = ['csrf_token', 'submit']
+        active_button = False
+
+        if current_user.is_authenticated:
+            roles = set([role.name for role in current_user.roles])
+            if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+                active_button = True
+
         if request.method == "POST":
+
             if 'editordata' in request.form:
                 new_doc_text = request.form.get('editordata')
                 #print(new_doc_text)
                 doc.doc_text = new_doc_text
+                new_action = ActivityLog(user=current_user.id,
+                                         datetime=datetime.datetime.now(),
+                                         document=doc.id,
+                                         doc_type='edit_text')
+                db.session.add(new_action)
                 db.session.commit()
+
             elif 'doc_name' in request.form:
                 form = EditMeta(request.form)
 
@@ -486,77 +523,205 @@ def create_app():
                                         db.session.merge(doc)
                                         #db.session.commit()
                                         #print('добавили', field.name, el)
-
-                    db.session.commit()
+                new_action = ActivityLog(user=current_user.id,
+                                         datetime=datetime.datetime.now(),
+                                         document=doc.id,
+                                         doc_type='edit_meta')
+                db.session.add(new_action)
+                db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
+            doc_files = DocumentsFiles.query.filter_by(document=doc.id).all()
             title = doc.doc_name
         else:
             warning = "Документа с ID "+str(id)+" нет в базе данных"
             title = "Документ не найден"
             doc_dict = {}
+            doc_files = ''
 
         return render_template('doc_page.html',
                                doc_dict=doc_dict,
+                               doc_files=doc_files,
                                title=title,
-                               warning=warning)
+                               warning=warning,
+                               active_button=active_button)
 
     @app.route('/text/<int:id>', methods=['GET', 'POST'])
-    @roles_required(['Admin'])
+    @roles_required()
     def text(id):
         doc = Documents.query.filter_by(id=id).first()
+        roles = set([role.name for role in current_user.roles])
+        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+            if doc:
+                doc_dict = query_to_dict(doc)
+            else:
+                doc_dict = {}
 
-        if doc:
-            doc_dict = query_to_dict(doc)
+            warning = "Документа с ID "+str(id)+" нет в базе данных"
+            return render_template('edit_text.html',
+                                   doc_dict=doc_dict,
+                                   title="Редактировать текст",
+                                   warning=warning)
         else:
-            doc_dict = {}
-
-        warning = "Документа с ID "+str(id)+" нет в базе данных"
-        return render_template('edit_text.html',
-                               doc_dict=doc_dict,
-                               title="Редактировать текст",
-                               warning=warning)
+            return redirect('/access_error/'+str(id))
 
     @app.route('/edit/<int:id>', methods=['GET', 'POST'])
-    @roles_required(['Admin'])
+    @roles_required()
     def edit(id):
-
         doc = Documents.query.filter_by(id=id).first()
         form = EditMeta()
+        roles = set([role.name for role in current_user.roles])
 
-        def set_form_data(form):
-            for field in form:
-                if field.name in fields:
-                    field.data = getattr(doc, field.name)
-                elif field.name in choices:
-                    ch = ref_elements_list(choices[field.name])
-                    field.choices = ch
-                    if field.name in multiselect:
-                        set_values = []
-                        for el in getattr(doc, field.name):
-                            new = RefBooksElements.query.with_entities(RefBooksElements.id,
-                                                                       RefBooksElements.ref_value).filter_by(id=el.id).first()
-                            set_values.append(new[0])
-                        field.data = set_values
-                    else:
+        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+
+            def set_form_data(form):
+                for field in form:
+                    if field.name in fields:
                         field.data = getattr(doc, field.name)
+                    elif field.name in choices:
+                        ch = ref_elements_list(choices[field.name])
+                        if field.name in choices and field.name not in multiselect:
+                            ch.append((False, 'Ничего не выбрано'))
+                        field.choices = ch
+                        if field.name in multiselect:
+                            set_values = []
+                            for el in getattr(doc, field.name):
+                                new = RefBooksElements.query.with_entities(RefBooksElements.id,
+                                                                           RefBooksElements.ref_value).filter_by(id=el.id).first()
+                                set_values.append(new[0])
+                            field.data = set_values
+                        else:
+                            if getattr(doc, field.name) == None:
+                                field.data = False
+                            else:
+                                field.data = getattr(doc, field.name)
 
-        if doc:
-            doc_dict = query_to_dict(doc)
-            set_form_data(form)
+            if doc:
+                doc_dict = query_to_dict(doc)
+                set_form_data(form)
+            else:
+                doc_dict = {}
+
+            warning = "Документа с ID "+str(id)+" нет в базе данных"
+
+            return render_template('edit_meta.html',
+                                   title="Редактировать метаданные",
+                                   doc_dict=doc_dict,
+                                   form=form,
+                                   checkboxes=checkboxes,
+                                   diff_fields=diff_fields,
+                                   multiselect=multiselect,
+                                   choices=choices,
+                                   warning=warning)
         else:
-            doc_dict = {}
+            return redirect('/access_error/'+str(id))
 
-        warning = "Документа с ID "+str(id)+" нет в базе данных"
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
-        return render_template('edit_meta.html',
-                               title="Редактировать метаданные",
-                               doc_dict=doc_dict,
+    @app.route('/add_doc', methods=['POST', 'GET'])
+    @roles_required()
+    def add_doc():
+        docs = Documents.query.all()
+        form = AddDoc()
+        diff_fields_new = ["csrf_token", "doc_name", "img_names", "doc_text", "add_submit"]
+        def set_form_choices(form):
+            for field in form:
+                if field.name in choices:
+                    ch = ref_elements_list(choices[field.name])
+                    if field.name not in multiselect:
+                        ch.append((False, "Ничего не выбрано"))
+                    field.choices = ch
+                    if field.name not in multiselect and getattr(form, field.name).data == None:
+                        setattr(getattr(form, field.name), 'data', False)
+        set_form_choices(form)
+
+        if request.method == "POST": # and form.validate_on_submit():
+            images = os.listdir('static/images/doc_images')
+            doc_form = AddDoc(request.form)
+
+            if 'files' in request.files:
+                files = request.files.getlist('img_names')
+                for file in files:
+                    if len(files) == 1 and file.filename == '':
+                        pass
+                    elif file and allowed_file(file.filename):
+                        pass
+                    else:
+                        flash("Вы прикрепили файлы неверного формата. Допустимые форматы: .jpg, .jpeg, .png",
+                              'wrong_filetype')
+                        return render_template('add_doc.html',
+                                               form=form,
+                                               docs=docs,
+                                               diff_fields=diff_fields_new,
+                                               choices=choices,
+                                               multiselect=multiselect,
+                                               checkboxes=checkboxes,
+                                               title='Новый документ')
+
+            new_doc = Documents(doc_name=doc_form.doc_name.data)
+            for field in doc_form:
+                if field.name not in ['csrf_token', 'doc_name', 'add_submit']:
+                    if field.name in multiselect:
+                        for el_id in field.data:
+                            new_el = RefBooksElements.query.filter_by(id=el_id).first()
+                            getattr(new_doc, field.name).append(new_el)
+                    elif field.name == 'img_names':
+                        files = request.files.getlist('img_names')
+                        file_names = ', '.join([file.filename for file in files])
+                        for file in files:
+                            if not file_names:
+                                setattr(new_doc, field.name, None)
+                                continue
+                            else:
+                                filename = secure_filename(file.filename)
+                                if file.filename not in images:
+                                    print(filename, 'saved')
+                                    file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
+
+                                new_file = DocumentsFiles()
+                                new_file.filename = filename
+                                new_file.document = new_doc.id
+                                new_file.load_date = datetime.datetime.now()
+                                new_file.filetype = file.filename.split('.')[-1]
+
+                                db.session.add(new_file)
+                        if file_names:
+                            setattr(new_doc, field.name, file_names)
+                    elif field.data != '':
+                        setattr(new_doc, field.name, field.data)
+                    else:
+                        setattr(new_doc, field.name, None)
+
+            new_doc.reg_date = datetime.datetime.now()
+            new_doc.owner = current_user.id
+
+            new_action = ActivityLog(user=current_user.id,
+                                     datetime=datetime.datetime.now(),
+                                     document=new_doc.id,
+                                     doc_type='add_doc')
+            db.session.add(new_doc)
+            db.session.add(new_action)
+            db.session.commit()
+
+            return redirect('/'+str(new_doc.id))
+
+        return render_template('add_doc.html',
                                form=form,
-                               checkboxes=checkboxes,
-                               diff_fields=diff_fields,
+                               docs=docs,
+                               diff_fields=diff_fields_new,
+                               choices=choices,
                                multiselect=multiselect,
-                               warning=warning)
+                               checkboxes=checkboxes,
+                               title='Новый документ')
+
+    @app.route('/access_error/<int:id>')
+    def access_error(id):
+        return render_template('access_error.html',
+                               id=id,
+                               title='Доступ ограничен')
+
 
     @app.route('/linguistic_info')
     def linguistic_info():
@@ -574,14 +739,36 @@ def create_app():
                                title="О проекте")
 
     @app.route('/ref_books')
+    @roles_required(superior_roles)
     def ref_books():
         return render_template('ref_books.html',
                                title="Управление справочниками")
 
     @app.route('/activity_log')
+    @roles_required(superior_roles)
     def activity_log():
+        actions = ActivityLog.query.with_entities(ActivityLog.id,
+                                                  User.first_name.label('user_name'),
+                                                  User.last_name.label('user_lastname'),
+                                                  Documents.doc_name.label('document_name'),
+                                                  Documents.id.label('document_id'),
+                                                  ActivityLog.datetime,
+                                                  ActivityLog.doc_type
+                                                  )\
+        .join(User, User.id == ActivityLog.user)\
+        .join(Documents, Documents.id == ActivityLog.document)\
+        .all()
+        #actions = [query_to_dict(action) for action in actions]
+        #print(actions)
+        actions_dct = {'edit_meta': 'Редактирование метаданных',
+                       'edit_text': 'Редактирование текста',
+                       'edit_pics': 'Редактирование изображений',
+                       'add_doc': 'Добавление нового документа',
+                       'delete_doc': 'Удаление документа'}
         return render_template('activity_log.html',
-                               title="Журнал действий")
+                               title="Журнал действий",
+                               actions=actions,
+                               actions_dct=actions_dct)
 
     # @app.route('/members')
     # @login_required

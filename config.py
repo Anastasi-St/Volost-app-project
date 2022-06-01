@@ -12,3 +12,6 @@ class Config(object):
     USER_EMAIL_SENDER_EMAIL = "noreply@example.com"
     USER_ENABLE_REGISTER = False
     USER_ENABLE_FORGOT_PASSWORD = False
+
+    UPLOAD_FOLDER = 'static/images/doc_images/'
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
