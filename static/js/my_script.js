@@ -131,32 +131,32 @@ $(document).ready(function() {
     $("#amount").val( (new Date($( "#slider-range" ).slider( "values", 0 )*1000).toDateString()) +
           " - " + (new Date($( "#slider-range" ).slider( "values", 1 )*1000)).toDateString());
 
-    $("#img").hide();
+    //$("#img").hide();
     $('.gallery-image').elevateZoom({
         zoomWindowWidth: 600,
         zoomWindowHeight: 400,
         scrollZoom: true
     });
 
-    $("#textButton").click(function() {
-        if (!$("#textButton").hasClass("active")) {
-            $("#img").hide();
-            $("#imgButton").removeClass("active");
-            $("#textButton").addClass("active");
-            $("#text").show();
-        };
-    });
+    //$("#textButton").click(function() {
+    //    if (!$("#textButton").hasClass("active")) {
+    //        $("#img").hide();
+    //        $("#imgButton").removeClass("active");
+    //        $("#textButton").addClass("active");
+    //        $("#text").show();
+    //    };
+    //});
 
-    $("#imgButton").click(function() {
-        if (!$("#imgButton").hasClass("active")) {
-            $("#text").hide();
-            $("#textButton").removeClass("active");
-            $("#imgButton").addClass("active");
-            $("#img").show();
-        };
-    });
+    //$("#imgButton").click(function() {
+    //    if (!$("#imgButton").hasClass("active")) {
+    //        $("#text").hide();
+    //        $("#textButton").removeClass("active");
+    //        $("#imgButton").addClass("active");
+    //        $("#img").show();
+    //    };
+    //});
 
-    $('#summernote, #doc_text').each(function() {
+    $('#summernote, textarea#doc_text').each(function() {
         $(this).summernote({
                toolbar: [
                  ['style', ['style']],
@@ -175,5 +175,21 @@ $(document).ready(function() {
                height: 300,
                lang: 'ru-RU'
        });
+    });
+
+    $("textarea#text").summernote({
+        toolbar: [
+            ['color', ['backcolor']],
+            ['view', ['fullscreen', 'codeview', 'help']]
+        ],
+        //colors: [
+        //    ['#E79C9C', '#FFC69C', '#FFE79C', '#B5D6A5', '#A5C6CE', '#9CC6EF', '#B5A5D6', '#D6A5BD']
+        //],
+        //colorsName: [['Красный', 'Оранжевый', 'Жёлтый', 'Зелёный', 'Морской', 'Голубой', 'Фиолетовый', 'Розовый']],
+        colorButton: {
+          backColor: '#transparent'
+        },
+        placeholder: "Текст документа...",
+        lang: 'ru-RU'
     });
 });

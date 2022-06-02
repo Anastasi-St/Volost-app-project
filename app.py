@@ -4,7 +4,7 @@ from flask import *
 from config import Config
 from werkzeug.utils import secure_filename
 import datetime
-import os
+import os, codecs
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import ENUM
@@ -12,13 +12,19 @@ from sqlalchemy.orm import aliased
 from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
 import itertools
-from forms import EditMeta, SearchForm, AddDoc
+from forms import EditMeta, SearchForm, AddDoc, AddPics, SemanticMarkup
+from bs4 import BeautifulSoup
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     babel = Babel(app)
     db = SQLAlchemy(app)
+
+    class Role(db.Model):
+        __tablename__ = 'roles'
+        id = db.Column(db.Integer(), primary_key=True)
+        name = db.Column(db.String(50), unique=True)
 
     class User(db.Model, UserMixin):
         __tablename__ = 'users'
@@ -33,11 +39,6 @@ def create_app():
         last_name = db.Column(db.String(100), nullable=False, server_default='')
 
         roles = db.relationship('Role', secondary='user_roles')
-
-    class Role(db.Model):
-        __tablename__ = 'roles'
-        id = db.Column(db.Integer(), primary_key=True)
-        name = db.Column(db.String(50), unique=True)
 
     class UserRoles(db.Model):
         __tablename__ = 'user_roles'
@@ -118,7 +119,7 @@ def create_app():
         id = db.Column(db.Integer(), primary_key=True)
         filename = db.Column(db.String(255), nullable=False)
         load_date = db.Column(db.DateTime(), nullable=False)
-        document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        document = db.Column(db.Integer(), nullable=False) #db.ForeignKey('documents.id', ondelete='CASCADE'))
         filetype = db.Column(ENUM('jpg', 'jpeg', 'png', name='file_type', create_type=False), nullable=False)
 
     class ActivityLog(db.Model):
@@ -126,7 +127,7 @@ def create_app():
         id =  db.Column(db.Integer(), primary_key=True)
         user = db.Column(db.Integer(), db.ForeignKey('users.id'), nullable=False)
         datetime = db.Column(db.DateTime(), nullable=False)
-        document = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
+        document = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
         doc_type = db.Column(ENUM('edit_meta', 'edit_text', 'edit_pics', 'add_doc', 'delete_doc',
                                   name='act_type', create_type=False), nullable=False) # переименовала!!
 
@@ -172,13 +173,6 @@ def create_app():
     #for doc in Documents.query.all():
     #    fill_docfiles(doc)
     #    calculate_waiting(doc)
-
-    #def insert_owner(doc):
-    #    doc.owner = 3
-    #    db.session.commit()
-
-    #for doc in Documents.query.all():
-    #    insert_owner(doc)
 
     #for text in Documents.query.with_entities(Documents.id, Documents.doc_text).all():
     #    if text.doc_text:
@@ -270,7 +264,7 @@ def create_app():
         uyezd = aliased(RefBooksElements)
         volost = aliased(RefBooksElements)
         court_result = aliased(RefBooksElements)
-        themes = aliased(RefBooksElements)
+        #themes = aliased(RefBooksElements)
 
         #print(Documents.query.with_entities(Documents.id, Documents.doc_name).all())
 
@@ -463,8 +457,11 @@ def create_app():
 
     @app.route('/<int:id>', methods=['GET', 'POST'])
     def doc_page(id):
-        warning = ''
         doc = Documents.query.filter_by(id=id).first()
+
+        if not doc:
+            return redirect('/no_doc/'+str(id))
+
         diff_fields = ['csrf_token', 'submit']
         active_button = False
 
@@ -531,10 +528,9 @@ def create_app():
                 db.session.commit()
         if doc:
             doc_dict = query_to_dict(doc)
-            doc_files = DocumentsFiles.query.filter_by(document=doc.id).all()
+            doc_files = DocumentsFiles.query.filter_by(document=id).all()
             title = doc.doc_name
         else:
-            warning = "Документа с ID "+str(id)+" нет в базе данных"
             title = "Документ не найден"
             doc_dict = {}
             doc_files = ''
@@ -543,25 +539,42 @@ def create_app():
                                doc_dict=doc_dict,
                                doc_files=doc_files,
                                title=title,
-                               warning=warning,
+                               active_button=active_button,
+                               active_text=True)
+
+    @app.route('/<int:id>/imgs')
+    def imgs(id):
+        doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
+        doc_dict = query_to_dict(doc)
+        doc_files = DocumentsFiles.query.filter_by(document=id).all()
+        active_button = False
+
+        if current_user.is_authenticated:
+            roles = set([role.name for role in current_user.roles])
+            if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+                active_button = True
+#
+        return render_template('doc_page_imgs.html',
+                               title=doc.doc_name,
+                               doc_dict=doc_dict,
+                               doc_files=doc_files,
+                               active_img=True,
                                active_button=active_button)
 
     @app.route('/text/<int:id>', methods=['GET', 'POST'])
     @roles_required()
     def text(id):
         doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
         roles = set([role.name for role in current_user.roles])
         if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
-            if doc:
-                doc_dict = query_to_dict(doc)
-            else:
-                doc_dict = {}
-
-            warning = "Документа с ID "+str(id)+" нет в базе данных"
+            doc_dict = query_to_dict(doc)
             return render_template('edit_text.html',
                                    doc_dict=doc_dict,
-                                   title="Редактировать текст",
-                                   warning=warning)
+                                   title="Редактировать текст")
         else:
             return redirect('/access_error/'+str(id))
 
@@ -569,10 +582,12 @@ def create_app():
     @roles_required()
     def edit(id):
         doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
         form = EditMeta()
         roles = set([role.name for role in current_user.roles])
 
-        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):#
 
             def set_form_data(form):
                 for field in form:
@@ -596,13 +611,8 @@ def create_app():
                             else:
                                 field.data = getattr(doc, field.name)
 
-            if doc:
-                doc_dict = query_to_dict(doc)
-                set_form_data(form)
-            else:
-                doc_dict = {}
-
-            warning = "Документа с ID "+str(id)+" нет в базе данных"
+            doc_dict = query_to_dict(doc)
+            set_form_data(form)
 
             return render_template('edit_meta.html',
                                    title="Редактировать метаданные",
@@ -611,8 +621,7 @@ def create_app():
                                    checkboxes=checkboxes,
                                    diff_fields=diff_fields,
                                    multiselect=multiselect,
-                                   choices=choices,
-                                   warning=warning)
+                                   choices=choices)
         else:
             return redirect('/access_error/'+str(id))
 
@@ -641,7 +650,7 @@ def create_app():
             images = os.listdir('static/images/doc_images')
             doc_form = AddDoc(request.form)
 
-            if 'files' in request.files:
+            if 'img_names' in request.files:
                 files = request.files.getlist('img_names')
                 for file in files:
                     if len(files) == 1 and file.filename == '':
@@ -650,7 +659,7 @@ def create_app():
                         pass
                     else:
                         flash("Вы прикрепили файлы неверного формата. Допустимые форматы: .jpg, .jpeg, .png",
-                              'wrong_filetype')
+                              'warning')
                         return render_template('add_doc.html',
                                                form=form,
                                                docs=docs,
@@ -661,6 +670,11 @@ def create_app():
                                                title='Новый документ')
 
             new_doc = Documents(doc_name=doc_form.doc_name.data)
+            new_doc.reg_date = datetime.datetime.now()
+            new_doc.owner = current_user.id
+            db.session.add(new_doc)
+            db.session.commit()
+
             for field in doc_form:
                 if field.name not in ['csrf_token', 'doc_name', 'add_submit']:
                     if field.name in multiselect:
@@ -677,7 +691,7 @@ def create_app():
                             else:
                                 filename = secure_filename(file.filename)
                                 if file.filename not in images:
-                                    print(filename, 'saved')
+                                    #print(filename, 'saved')
                                     file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
 
                                 new_file = DocumentsFiles()
@@ -694,14 +708,14 @@ def create_app():
                     else:
                         setattr(new_doc, field.name, None)
 
-            new_doc.reg_date = datetime.datetime.now()
-            new_doc.owner = current_user.id
+            #db.session.add(new_doc)
+            #db.session.commit()
 
             new_action = ActivityLog(user=current_user.id,
                                      datetime=datetime.datetime.now(),
                                      document=new_doc.id,
                                      doc_type='add_doc')
-            db.session.add(new_doc)
+
             db.session.add(new_action)
             db.session.commit()
 
@@ -716,11 +730,115 @@ def create_app():
                                checkboxes=checkboxes,
                                title='Новый документ')
 
+    @app.route('/pics/<int:id>', methods=['POST', 'GET'])
+    @roles_required()
+    def edit_pics(id):
+        doc_files = DocumentsFiles.query\
+            .with_entities(DocumentsFiles.document, DocumentsFiles.filename)\
+            .filter_by(document=id).all()
+        doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
+        form = AddPics()
+
+        roles = set([role.name for role in current_user.roles])
+
+        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+
+            if request.method == 'POST':
+                form = AddPics(request.form)
+
+                if 'imgs' in request.files:
+                    files = request.files.getlist('imgs')
+                    #print(files)
+                    for file in files:
+                        if len(files) == 1 and file.filename == '':
+                            flash("Вы не выбрали ни один файл", 'warning')
+                            return render_template('edit_pics.html',
+                                                   doc_files=doc_files,
+                                                   doc=doc,
+                                                   form=form,
+                                                   title="Редактировать изображения")
+                        elif file.filename in doc.img_names:
+                            flash("У документа уже есть файл "+file.filename, 'warning')
+                            return render_template('edit_pics.html',
+                                                   doc_files=doc_files,
+                                                   doc=doc,
+                                                   form=form,
+                                                   title="Редактировать изображения")
+                        elif file and allowed_file(file.filename):
+                            pass
+                        else:
+                            flash("Вы прикрепили файлы неверного формата. Допустимые форматы: .jpg, .jpeg, .png",
+                                  'warning')
+                            return render_template('edit_pics.html',
+                                                   doc_files=doc_files,
+                                                   doc=doc,
+                                                   form=form,
+                                                   title="Редактировать изображения")
+
+                images = os.listdir('static/images/doc_images')
+                files = request.files.getlist('imgs')
+                for file in files:
+                    filename = secure_filename(file.filename)
+                    #if file.filename not in images:
+                        #file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
+                    new_file = DocumentsFiles(filename=filename,
+                                              load_date=datetime.datetime.now(),
+                                              document=doc.id,
+                                              filetype=filename.split('.')[-1])
+                    #print(new_file.filename, new_file.load_date, new_file.document, new_file.filetype)
+                    #db.session.add(new_file)
+                #print(doc.img_names)
+                doc.img_names += ', '+', '.join([file.filename for file in files])
+                #print(doc.img_names)
+                #db.session.commit()
+        else:
+            return redirect('/access_error/'+str(id))
+
+        return render_template('edit_pics.html',
+                               doc_files=doc_files,
+                               doc=doc,
+                               form=form,
+                               title="Редактировать изображения")
+
+    @app.route('/semantic_markup/<int:id>', methods=['POST', 'GET'])
+    @roles_required(superior_roles)
+    def semantic_markup(id):
+        doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
+        form = SemanticMarkup()
+
+        roles = set([role.name for role in current_user.roles])
+
+        if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+            with codecs.open('clean_texts/clean_text_'+str(id)+'.txt', 'r', encoding='windows-1251') as doc_text:
+                doc_text = doc_text.read().replace('\n', '<br>')
+                form.text.data = doc_text
+            if request.method == 'POST':
+                form = SemanticMarkup(request.form)
+                soup = BeautifulSoup(form.text.data, 'html.parser')
+                for s in soup.select("span"):
+                    print(s.text)
+        else:
+            return redirect('/access_error/'+str(id))
+        return render_template('semantic_markup.html',
+                               title=doc.doc_name,
+                               doc=doc,
+                               form=form)
+
     @app.route('/access_error/<int:id>')
     def access_error(id):
         return render_template('access_error.html',
                                id=id,
                                title='Доступ ограничен')
+
+    @app.route('/no_doc/<int:id>')
+    def no_doc(id):
+        return render_template('no_doc.html',
+                               id=id,
+                               title="Документ не найден")
 
 
     @app.route('/linguistic_info')

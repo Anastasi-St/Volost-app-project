@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, SelectMultipleField, \
     DateField, SelectField, IntegerField, DecimalField, BooleanField, \
     MultipleFileField
+from flask_wtf.file import  FileAllowed
 from wtforms.validators import DataRequired, regexp
 
 class EditMeta(FlaskForm):
@@ -97,5 +98,10 @@ class SearchForm(FlaskForm):
 
     submit = SubmitField("Искать")
 
+class AddPics(FlaskForm):
+    imgs = MultipleFileField("", validators=[FileAllowed(['jpg', 'jpeg', 'png'], "Неверный формат!")])
+    submit_pics = SubmitField("Добавить изображения")
 
-
+class SemanticMarkup(FlaskForm):
+    text = TextAreaField("Текст: ")
+    sem_submit = SubmitField("Сохранить")

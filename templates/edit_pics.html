@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <ul class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('index') }}">Документы</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="/{{ doc.id }}">{{ doc.doc_name }}</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="#">Редактировать изображения</a>
+        </li>
+    </ul>
+
+    <h3 class="mb-3">{{ doc.doc_name }}</h3>
+
+
+    {% for img in doc_files %}
+        <div>
+            <img src="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
+                 alt="Не удалось загрузить изображение"
+                 width="50%" height="50%" class="mb-3">
+            <span class="ml-2 align-top"><button class="btn btn-danger">Удалить</button></span>
+        </div>
+    {% endfor %}
+
+    <form enctype="multipart/form-data" action="" method="POST">
+        {{ form.csrf_token() }}
+        <span>{{ form.imgs(class="form-control-file") }}</span>
+        {{ form.submit_pics(class="btn btn-secondary mt-2") }}
+    </form>
+
+{% endblock %}

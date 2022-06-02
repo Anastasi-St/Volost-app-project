@@ -1,0 +1,17 @@
+{% extends 'doc_page.html' %}
+{% block displayed %}
+<div id="img">
+    {% if doc_files %}
+        {% for img in doc_files %}
+            <img src="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
+                 data-zoom-image="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
+                 class="gallery-image m-2"
+                 alt="Не удалось загрузить изображение"
+                 width="50%" height="50%">
+        {% endfor %}
+    {% else %}
+        <h3>У документа пока что нет изображений</h3>
+    {% endif %}
+</div>
+
+{% endblock %}

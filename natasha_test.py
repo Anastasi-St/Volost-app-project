@@ -93,11 +93,14 @@ def dict_to_json(dct):
         json.dump(dct, f, indent=4)
 
 #dict_to_json(stats)
-#from urllib import request
+from urllib import request
 #u2 = request.urlopen("https://www.kinopoisk.ru/film/342/")
-#site = u2.read()
+#site = '''<img alt="Криминальное чтиво (Pulp Fiction)" class="film-poster styles_root__24Jga styles_rootInLight__GwYHH image styles_root__DZigd" data-tid="d813cf42" src="//avatars.mds.yandex.net/get-kinopoisk-image/1900788/87b5659d-a159-4224-9bff-d5a5d109a53b/300x450" srcset="//avatars.mds.yandex.net/get-kinopoisk-image/1900788/87b5659d-a159-4224-9bff-d5a5d109a53b/300x450 1x, //avatars.mds.yandex.net/get-kinopoisk-image/1900788/87b5659d-a159-4224-9bff-d5a5d109a53b/600x900 2x"/>'''#u2.read()
 #u2.close()
 #print(site)
 #soup = BeautifulSoup(site, "html.parser")
+#movie = 'Криминальное чтиво'
 #for s in soup.select('img.film-poster'):
-#    print(s)
+#    print(s["alt"], '\n', s["src"])
+#    if movie in s["alt"]:
+#        print('yass')

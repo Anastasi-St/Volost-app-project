@@ -1,45 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
 
-    {% if doc_dict %}
-        <ul class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{{ url_for('index') }}">Документы</a>
+    <ul class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('index') }}">Документы</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="#">{{ doc_dict['doc_name'] }}</a>
+        </li>
+    </ul>
+
+    <div class="d-flex">
+        <h3 id="doc_name">{{ doc_dict['doc_name'] }}</h3>
+        <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
+    </div>
+
+    <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
+                                    {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}
+                                {% else %}
+                                    Не указано
+                                {% endif %}
+    </p>
+    <p><b>Дата вынесения решения</b>: {% if doc_dict['decision_date'] %}
+                                    {{ doc_dict['decision_date'].strftime('%d.%m.%Y') }}
+                                {% else %}
+                                    Не указано
+                                {% endif %}
+    </p>
+
+    <div class="mb-4">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if active_text %}active{% endif %}" id="textButton" href="/{{ doc_dict['id'] }}">Текст</a>
             </li>
-            <li class="breadcrumb-item">
-                <a href="#">{{ doc_dict['doc_name'] }}</a>
+            <li class="nav-item">
+                <a class="nav-link {% if active_img %}active{% endif %}" id="imgButton" href="/{{ doc_dict['id'] }}/imgs">Изображения</a>
             </li>
         </ul>
+    </div>
 
-        <div class="d-flex">
-            <h3 id="doc_name">{{ doc_dict['doc_name'] }}</h3>
-            <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
-        </div>
 
-        <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
-                                        {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}
-                                    {% else %}
-                                        Не указано
-                                    {% endif %}
-        </p>
-        <p><b>Дата вынесения решения</b>: {% if doc_dict['decision_date'] %}
-                                        {{ doc_dict['decision_date'].strftime('%d.%m.%Y') }}
-                                    {% else %}
-                                        Не указано
-                                    {% endif %}
-        </p>
-
-        <div class="mb-4">
-            <ul class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active" id="textButton" href="#">Текст</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="imgButton" href="#">Изображения</a>
-                </li>
-            </ul>
-        </div>
-
+    {% block displayed %}
         <div id="text">
             {% if doc_dict['doc_text'] %}
                 {{ doc_dict['doc_text']|safe }}
@@ -47,35 +48,19 @@
                 <h3>Тескт документа не указан</h3>
             {% endif %}
         </div>
-
-        <div id="img">
-            {% if doc_files %}
-                {% for img in doc_files %}
-                    <img src="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
-                         data-zoom-image="{{ url_for('static', filename='images/doc_images/'+img.filename) }}"
-                         class="gallery-image m-2"
-                         alt="Не удалось загрузить изображение"
-                         width="50%" height="50%">
-                {% endfor %}
-            {% else %}
-                <h3>У документа пока что нет изображений</h3>
-            {% endif %}
-        </div>
+    {% endblock %}
 
     {% if current_user.is_authenticated %}
     <hr>
     <a class="btn btn-secondary mr-2 {%- if not active_button %} disabled{%- endif -%}"
+       href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
+    <a class="btn btn-secondary mr-2 {%- if not active_button %} disabled{%- endif -%}"
        href="/text/{{ doc_dict['id'] }}">Редактировать текст</a>
     <a class="btn btn-secondary {%- if not active_button %} disabled{%- endif -%}"
-       href="/edit/{{ doc_dict['id'] }}">Редактировать метаданные</a>
-    {% endif %}
-
-    {% if 'Admin' in current_user.roles %}
-    <p>{{ current_user.roles }}</p>
-    {% endif %}
-
-    {% elif warning %}
-        <h4 class="p-3">{{ warning }}</h4>
+       href="/pics/{{ doc_dict['id'] }}">Редактировать изображения</a>
+    <hr>
+    <a class="btn btn-secondary mr-2 {%- if not active_button %} disabled{%- endif -%}"
+       href="/semantic_markup/{{ doc_dict['id'] }}">Семантическая разметка</a>
     {% endif %}
 
 {% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('index') }}">Документы</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="/{{ doc.id }}">{{ doc.doc_name }}</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="#">Семанитическая разметка</a>
+    </li>
+  </ul>
+
+  <h3 class="mb-3">Семантическая разметка</h3>
+  <div class="row">
+    <div class="col-10">
+      <form action="" method="POST">
+        {{ form.csrf_token() }}
+        {{ form.text }}
+        {{ form.sem_submit(class="btn btn-secondary mt-2") }}
+        <a class="btn btn-primary mt-2 ml-2" href="/{{ doc.id }}">Отмена</a>
+      </form>
+    </div>
+    <div class="col-2">
+      <h5>Легенда</h5><!--#E79C9C', '#FFC69C', '#FFE79C', '#B5D6A5', '#A5C6CE', '#9CC6EF', '#B5A5D6', '#D6A5BD-->
+      <div style="background-color: #E79C9C;">&nbsp;</div>
+      <div style="background-color: #FFC69C;">&nbsp;</div>
+      <div style="background-color: #FFE79C;">&nbsp;</div>
+      <div style="background-color: #B5D6A5;">&nbsp;</div>
+      <div style="background-color: #A5C6CE;">&nbsp;</div>
+      <div style="background-color: #9CC6EF">&nbsp;</div>
+      <div style="background-color: #B5A5D6;">&nbsp;</div>
+      <div style="background-color: #D6A5BD;">&nbsp;</div>
+    </div>
+  </div>
+
+{% endblock %}
