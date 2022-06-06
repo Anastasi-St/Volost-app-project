@@ -31,10 +31,19 @@
     <div class="mb-4">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a class="nav-link {% if active_text %}active{% endif %}" id="textButton" href="/{{ doc_dict['id'] }}">Текст</a>
+                <a class="nav-link {% if active_text %}active{% endif %}"
+                   id="textButton"
+                   href="/{{ doc_dict['id'] }}">Текст</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_img %}active{% endif %}" id="imgButton" href="/{{ doc_dict['id'] }}/imgs">Изображения</a>
+                <a class="nav-link {% if active_img %}active{% endif %}"
+                   id="imgButton"
+                   href="/{{ doc_dict['id'] }}/imgs">Изображения</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_sem %}active{% endif %}"
+                   id="semButton"
+                   href="/{{ doc_dict['id'] }}/sem">Семантическая разметка</a>
             </li>
         </ul>
     </div>
@@ -62,5 +71,7 @@
     <a class="btn btn-secondary mr-2 {%- if not active_button %} disabled{%- endif -%}"
        href="/semantic_markup/{{ doc_dict['id'] }}">Семантическая разметка</a>
     {% endif %}
+    {% block button %}
+    {% endblock %}
 
 {% endblock %}

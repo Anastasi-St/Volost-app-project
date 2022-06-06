@@ -23,21 +23,21 @@
         <form action="/{{ doc_dict['id'] }}" method="POST">
             {{ form.csrf_token() }}
             <div class="input-group">
-                {{ form.doc_name.label(class="pt-2 pb-2 pr-2") }} <span style="color:red;" class="pr-2">*</span>
+                {{ form.doc_name.label(class="py-2 pr-2") }} <span style="color:red;" class="pr-2">*</span>
                 {{ form.doc_name(class="form-control") }}
             </div>
             {% for field in form if field.name not in diff_fields %}
                 {% if field.name in multiselect %}
-                    {{ field.label(class="pt-2 pb-2 pr-2") }}
+                    {{ field.label(class="py-2 pr-2") }}
                     {{ field(class="multiple", multiple="multiple") }}
                 {% elif field.name in checkboxes %}
                     <div class="input-group">
-                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        {{ field.label(class="py-2 pr-2") }}
                         <div class="p-2">{{ field(class="align-middle") }}</div>
                     </div>
                 {% else  %}
                     <div class="input-group">
-                        {{ field.label(class="pt-2 pb-2 pr-2") }}
+                        {{ field.label(class="py-2 pr-2") }}
                         <span>
                                 {{ field(class="form-control pl-2") }}
                                 </span>

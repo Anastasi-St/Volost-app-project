@@ -15,7 +15,7 @@
 
   <h3 class="mb-3">Семантическая разметка</h3>
   <div class="row">
-    <div class="col-10">
+    <div class="col-9">
       <form action="" method="POST">
         {{ form.csrf_token() }}
         {{ form.text }}
@@ -23,16 +23,19 @@
         <a class="btn btn-primary mt-2 ml-2" href="/{{ doc.id }}">Отмена</a>
       </form>
     </div>
-    <div class="col-2">
-      <h5>Легенда</h5><!--#E79C9C', '#FFC69C', '#FFE79C', '#B5D6A5', '#A5C6CE', '#9CC6EF', '#B5A5D6', '#D6A5BD-->
-      <div style="background-color: #E79C9C;">&nbsp;</div>
-      <div style="background-color: #FFC69C;">&nbsp;</div>
-      <div style="background-color: #FFE79C;">&nbsp;</div>
-      <div style="background-color: #B5D6A5;">&nbsp;</div>
-      <div style="background-color: #A5C6CE;">&nbsp;</div>
-      <div style="background-color: #9CC6EF">&nbsp;</div>
-      <div style="background-color: #B5A5D6;">&nbsp;</div>
-      <div style="background-color: #D6A5BD;">&nbsp;</div>
+    <div class="col-3">
+      <h5>Легенда</h5>
+      {% for color, role in roles_trans %}
+      <div class="d-flex my-2 small"><div class="rounded mr-3" style="background-color: {{ color }}; width: 70px; height: 30px;">&nbsp;</div>
+        <span>{{ role }}</span></div>
+      {% endfor %}
+      <!--<span class="rounded" style="background-color: #FFC69C;">&nbsp;</span>
+      <span class="rounded" style="background-color: #FFE79C;">&nbsp;</span>
+      <span class="rounded" style="background-color: #B5D6A5;">&nbsp;</span>
+      <span class="rounded" style="background-color: #A5C6CE;">&nbsp;</span>
+      <span class="rounded" style="background-color: #9CC6EF">&nbsp;</span>
+      <span class="rounded" style="background-color: #B5A5D6;">&nbsp;</span>
+      <span class="rounded" style="background-color: #D6A5BD;">&nbsp;</span>-->
     </div>
   </div>
 

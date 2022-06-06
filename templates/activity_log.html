@@ -3,20 +3,20 @@
 {% block content %}
 
 <h2 class="mb-3">Журнал действий</h2>
-    <table class="table table-striped table-bordered w-75">
+    <table class="table table-sm table-striped table-bordered">
         <thead>
             <tr>
-                <th class="align-middle">№№</th>
-                <th class="align-middle">Пользователь</th>
-                <th class="align-middle">Документ</th>
-                <th class="align-middle">Вид действия</th>
-                <th class="align-middle">Время</th>
+                <th class="align-middle text-center">№№</th>
+                <th class="align-middle text-center">Пользователь</th>
+                <th class="align-middle text-center">Документ</th>
+                <th class="align-middle text-center">Вид действия</th>
+                <th class="align-middle text-center">Время</th>
             </tr>
         </thead>
         <tbody>
             {% for action in actions %}
             <tr>
-                <td>{{ loop.index }}</td>
+                <td class="text-center align-middle">{{ loop.index }}</td>
                 <td>{{ action.user_name }} {{action.user_lastname}}</td>
                 <td><a href="/{{ action.document_id }}">{{ action.document_name }}</a></td>
                 <td>{{ actions_dct[action.doc_type] }}</td>

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="d-flex mb-2">
+        <h2>Справочники</h2>
+        <div class="pl-3 pt-2"><a href="/ref_books/">Назад</a></div>
+    </div>
+
+    <h3 class="mb-3 ml-2">{{ ref_book.ref_name }}</h3>
+
+    <form class="ml-2" action="" method="POST">
+        <div class="input-group">
+            <label class="pr-3 py-2" for="ref_value">Название нового элемента:</label>
+                <span><input class="form-control mb-2"
+                             id="ref_value"
+                             name="ref_value"
+                             type="text"></span>
+        </div>
+        <input class="btn btn-secondary mt-2" type="submit" value="Сохранить">
+        <a class="btn btn-primary ml-2 mt-2" href="/ref_books/{{ ref_book.id }}">Отмена</a>
+    </form>
+
+{% endblock %}

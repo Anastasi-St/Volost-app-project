@@ -1,0 +1,23 @@
+{% extends 'doc_page.html' %}
+{% block displayed %}
+    {% if markup %}
+        <div class="row mb-2">
+            <div class="col-9">
+                {{ markup|safe }}
+            </div>
+            <div class="col-3">
+                <h5>Легенда</h5>
+                {% for color, role in roles_trans %}
+                <div class="d-flex my-2 small"><div class="rounded mr-3" style="background-color: {{ color }}; width: 70px; height: 30px;">&nbsp;</div>
+                    <span>{{ role }}</span></div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <h3 class="mb-3">{{ message }}</h3>
+    {% endif %}
+{% endblock %}
+{% block button %}
+    <a class="btn btn-info"
+       href="/{{ doc_dict['id'] }}/sem/xml">Скачать XML разметку</a>
+{% endblock %}

@@ -4,16 +4,18 @@ from flask import *
 from config import Config
 from werkzeug.utils import secure_filename
 import datetime
-import os, codecs
+import os, codecs, re
+from lxml import etree
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import aliased
-from sqlalchemy import and_
+#from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
-import itertools
+#import itertools
 from forms import EditMeta, SearchForm, AddDoc, AddPics, SemanticMarkup
-from bs4 import BeautifulSoup
 
 def create_app():
     app = Flask(__name__)
@@ -21,14 +23,9 @@ def create_app():
     babel = Babel(app)
     db = SQLAlchemy(app)
 
-    class Role(db.Model):
-        __tablename__ = 'roles'
-        id = db.Column(db.Integer(), primary_key=True)
-        name = db.Column(db.String(50), unique=True)
-
     class User(db.Model, UserMixin):
         __tablename__ = 'users'
-        id = db.Column(db.Integer, primary_key=True)
+        id = db.Column(db.Integer(), primary_key=True)
         active = db.Column('is_active', db.Boolean(), nullable=False, server_default='1')
 
         email = db.Column(db.String(255), nullable=False, unique=True)
@@ -40,11 +37,19 @@ def create_app():
 
         roles = db.relationship('Role', secondary='user_roles')
 
+    class Role(db.Model):
+        __tablename__ = 'roles'
+        id = db.Column(db.Integer(), primary_key=True)
+        name = db.Column(db.String(50), unique=True)
+
     class UserRoles(db.Model):
-        __tablename__ = 'user_roles'
+        __tablename__ = 'user_roles' #
         #id = db.Column(db.Integer(), primary_key=True)
         user_id = db.Column(db.Integer(), db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
         role_id = db.Column(db.Integer(), db.ForeignKey('roles.id', ondelete='CASCADE'), primary_key=True)
+
+    Role()
+    #UserRoles()
 
     class ReferenceBooks(db.Model):
         __tablename__ = 'reference_books'
@@ -52,12 +57,18 @@ def create_app():
         ref_name = db.Column(db.String(255), nullable=False)
         ref_default = db.Column(db.Boolean(), server_default='1')
 
+        def __str__(self):
+            return self.ref_name
+
     class RefBooksElements(db.Model):
         __tablename__ = 'ref_books_elements'
         id =  db.Column(db.Integer(), primary_key=True)
         ref_book = db.Column(db.Integer(), db.ForeignKey('reference_books.id'), nullable=False)
         ref_value = db.Column(db.String(255), nullable=False)
         ref_date = db.Column(db.DateTime(), nullable=False)
+
+        def __str__(self):
+            return self.ref_value
 
     class Documents(db.Model):
         __tablename__ = 'documents'
@@ -148,6 +159,16 @@ def create_app():
 
     user_manager = UserManager(app, db, User)
     db.create_all()
+
+    #admin = Admin(app)
+
+    #class RefBooksElsView(ModelView):
+    #    column_display_pk = True
+
+    #admin.add_view(ModelView(User, db.session))
+    #admin.add_view(ModelView(Role, db.session))
+    #admin.add_view(RefBooksElsView(RefBooksElements, db.session))
+    #admin.add_view(ModelView(ReferenceBooks, db.session))
 
     def calculate_waiting(doc):
         if doc.decision_date and doc.create_date:
@@ -376,6 +397,22 @@ def create_app():
     checkboxes_search = ['img_names', 'doc_text']
     diff_fields = ["csrf_token", "doc_name", "submit"]
     waits = ['wait_time', 'ap_dec_time', 'decision_exec_time']
+
+    roles_trans = [('#E79C9C', 'Содержание жалобы'),
+                   ('#FFC69C', 'Формулировка дела'),
+                   ('#FFE79C', 'Объяснение истца(ов)'),
+                   ('#B5D6A5', 'Объяснение/возражение ответчика(ов)'),
+                   ('#A5C6CE', 'Показания свидетелей'),
+                   ('#9CC6EF', 'Решение суда'),
+                   ('#B5A5D6', 'Подписи судей'),
+                   ('#D6A5BD', 'Расписка об ознакомении с решением'),
+                   ('#E76363', 'Время отмены или утверждения решения'),
+                   ('#F7AD6B', 'Статус исполнения решения'),
+                   ('#FF9C00', 'Истец'),
+                   ('#FFFF00', 'Ответчик'),
+                   ('#00FF00', 'Свидетель'),
+                   ('#00FFFF', 'Судья'),
+                   ('#CEC6CE', 'Причастный (роль не определена)')]
 
     superior_roles = ['Experienced_Researcher', 'Admin', 'Superadmin']
 
@@ -809,24 +846,128 @@ def create_app():
         if not doc:
             return redirect('/no_doc/'+str(id))
         form = SemanticMarkup()
+        color_roles = [('#E79C9C', 'complaint_content'),
+                       ('#FFC69C', 'case_statement'),
+                       ('#FFE79C', 'plaintiff_explanation'),
+                       ('#B5D6A5', 'defendant_explanation_objection'),
+                       ('#A5C6CE', 'witness_testimony'),
+                       ('#9CC6EF', 'court_decision'),
+                       ('#B5A5D6', 'judges_signatures'),
+                       ('#D6A5BD', 'decision_hearing_rec'),
+                       ('#E76363', 'decision_approval_cancellation_date'),
+                       ('#F7AD6B', 'decision_execution_status'),
+                       ('#FF9C00', 'plaintiff'),
+                       ('#FFFF00', 'defendant'),
+                       ('#00FF00', 'witness'),
+                       ('#00FFFF', 'judge'),
+                       ('#CEC6CE', 'involved_no_role')]
+
+        def to_hex(match):
+            gr = match.group(1)
+            tpl = tuple([int(n) for n in gr.split(', ')])
+            result = '#%02x%02x%02x' % tpl
+            return result.upper()
 
         roles = set([role.name for role in current_user.roles])
-
         if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
-            with codecs.open('clean_texts/clean_text_'+str(id)+'.txt', 'r', encoding='windows-1251') as doc_text:
-                doc_text = doc_text.read().replace('\n', '<br>')
-                form.text.data = doc_text
+            html_path = 'semant_html/html_'+str(id)+'.txt'
+            clean_path = 'clean_texts/clean_text_'+str(id)+'.txt'
+            xml_path = 'semant_xml/xml_'+str(id)+'.xml'
+            if not os.path.exists(html_path):
+                with codecs.open(clean_path, 'r', encoding='windows-1251') as doc_text:
+                    doc_text = doc_text.read().replace('\n', '<br>')
+                    form.text.data = doc_text
+            else:
+                with codecs.open(html_path, 'r', encoding='utf-8') as doc_markup:
+                    doc_markup = doc_markup.read()
+                    form.text.data = doc_markup
+
             if request.method == 'POST':
                 form = SemanticMarkup(request.form)
-                soup = BeautifulSoup(form.text.data, 'html.parser')
-                for s in soup.select("span"):
-                    print(s.text)
+                text = form.text.data
+
+                def html_to_xml(html_txt):
+                    if 'span' in html_txt:
+                        new_text = re.sub(r'rgb\((.*?)\)', to_hex, html_txt, flags=re.I)
+                        for col, val in color_roles:
+                            new_text = new_text.replace('style="background-color: '+col+';"', 'type="'+val+'"')
+                        new_text = new_text.replace('span', 'semantic')
+                        new_text = '<?xml version="1.0" encoding="UTF-8"?><text>'+new_text+'</text>'
+                        new_text = new_text.replace('<br>', '') #&#xA;
+                        new_text = new_text.replace('&nbsp;', '&#xA0;')
+                        new_text = re.sub(r'(</semantic>|<text>)(.*?)<', r'\g<1><plain_text>'+r'\g<2>'+'</plain_text><', new_text)
+                        new_text = new_text.replace('<plain_text></plain_text>', '')
+                    else:
+                        new_text = '<?xml version="1.0" encoding="UTF-8"?><text><plain_text>'+html_txt+'</plain_text></text>'
+                        new_text = new_text.replace('<br>', '') #&#xA;
+                    return new_text
+
+                if not os.path.exists(html_path):
+                    with codecs.open(html_path, 'w', encoding='utf-8') as html:
+                        html.write(text)
+                    with codecs.open(xml_path, 'w', encoding='utf-8') as xml:
+                        #to_xml = etree.fromstring(html_to_xml(text).encode('utf-8'))
+                        #pretty_xml = etree.tostring(to_xml, pretty_print=True).decode('utf-8')
+                        xml.write(html_to_xml(text))
+                else:
+                    with codecs.open(html_path, 'r+', encoding='utf-8') as html:
+                        html_text = html.read()
+                        if text != html_text:
+                            with codecs.open(html_path, 'w', encoding='utf-8') as html:
+                                html.write(text)
+                            with codecs.open(xml_path, 'w', encoding='utf-8') as xml:
+                                #to_xml = etree.fromstring(html_to_xml(text).encode('utf-8'))
+                                #pretty_xml = etree.tostring(to_xml, pretty_print=True).decode('utf-8')
+                                xml.write(html_to_xml(text))
+                return redirect('/'+str(id))
         else:
             return redirect('/access_error/'+str(id))
         return render_template('semantic_markup.html',
                                title=doc.doc_name,
                                doc=doc,
-                               form=form)
+                               form=form,
+                               roles_trans=roles_trans)
+
+    @app.route('/<int:id>/sem')
+    def sem(id):
+        doc = Documents.query.filter_by(id=id).first()
+        if not doc:
+            return redirect('/no_doc/'+str(id))
+        doc_dict = query_to_dict(doc)
+        active_button = False
+        message = ''
+
+        if current_user.is_authenticated:
+            roles = set([role.name for role in current_user.roles])
+            if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
+                active_button = True
+
+        html_path = 'semant_html/html_'+str(id)+'.txt'
+
+        if os.path.exists(html_path):
+            with codecs.open(html_path, 'r', encoding='utf-8') as html:
+                markup = html.read()
+        else:
+            markup = ''
+            message = 'У данного документа ещё нет семантической разметки'
+
+        return render_template('doc_page_sem.html',
+                               title=doc.doc_name,
+                               markup=markup,
+                               message=message,
+                               doc_dict=doc_dict,
+                               active_sem=True,
+                               active_button=active_button,
+                               roles_trans=roles_trans)
+
+    @app.route('/<int:id>/sem/xml')
+    def download_xml(id):
+        filename = 'xml_'+str(id)+'.xml'
+        path = 'semant_xml/'
+        if not os.path.exists(path+filename):
+            print(path+filename)
+            return  redirect('/'+str(id)+'/sem')
+        return send_from_directory(path, filename, as_attachment=True)
 
     @app.route('/access_error/<int:id>')
     def access_error(id):
@@ -859,8 +1000,56 @@ def create_app():
     @app.route('/ref_books')
     @roles_required(superior_roles)
     def ref_books():
+        ref_books = ReferenceBooks.query.all()
         return render_template('ref_books.html',
-                               title="Управление справочниками")
+                               title="Управление справочниками",
+                               ref_books=ref_books)
+
+    @app.route('/ref_books/<int:id>', methods=['GET', 'POST'])
+    @roles_required(superior_roles)
+    def ref_book_edit(id):
+        ref_book = RefBooksElements.query.filter_by(ref_book=id).all()
+        ref_book_name = ReferenceBooks.query.filter_by(id=id).first()
+        if not ref_book:
+            return redirect('/no_book/'+str(id))
+        if request.method == 'POST':
+            for field in request.form:
+                field_data = request.form.get(field)
+                el_id = int(field)
+                ref_el = RefBooksElements.query.filter_by(id=el_id).first()
+                if ref_el.ref_value == field_data:
+                    continue
+                else:
+                    ref_el.ref_value = field_data
+            db.session.commit()
+        return render_template('ref_book_edit.html',
+                               title="Управление справочниками — "+ref_book_name.ref_name,
+                               ref_book=ref_book,
+                               ref_book_name=ref_book_name)
+
+    @app.route('/ref_books/<int:id>/add_el', methods=['GET', 'POST'])
+    @roles_required(superior_roles)
+    def add_ref_el(id):
+        ref_book = ReferenceBooks.query.filter_by(id=id).first()
+        if not ref_book:
+            return redirect('/no_book/'+str(id))
+        if request.method == 'POST':
+            new_ref_el = RefBooksElements()
+            new_ref_el.ref_value = request.form.get('ref_value')
+            db.session.add(new_ref_el)
+            db.session.commit()
+
+            return redirect('/ref_books/'+str(id))
+        return render_template('add_ref_el.html',
+                               title="Новый элмент справочника "+ref_book.ref_name,
+                               ref_book=ref_book)
+
+    @app.route('/no_book/<int:id>')
+    def no_book(id):
+        return render_template('no_book.html',
+                               title="Справочник не найден",
+                               id=id)
+
 
     @app.route('/activity_log')
     @roles_required(superior_roles)
