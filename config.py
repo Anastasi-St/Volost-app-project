@@ -5,7 +5,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postpass@localhost/myappdb'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    USER_APP_NAME = "My App"
+    USER_APP_NAME = "Volost court protocols"
     USER_ENABLE_EMAIL = True
     USER_ENABLE_USERNAME = False
     USER_EMAIL_SENDER_NAME = USER_APP_NAME

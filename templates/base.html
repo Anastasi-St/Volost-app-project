@@ -84,7 +84,8 @@
             ('about_project', 'О проекте'),
         ]
         -%}
-        {% set admin_pages = ['ref_books', 'activity_log'] -%}
+        {% set admin_pages = ['ref_books'] -%}
+        {% set logged_in_pages = ['activity_log'] -%}
         {% set active_page = active_page|default('index') -%}
         {% set roles = [] -%}
         {% if current_user.is_authenticated %}
@@ -98,15 +99,14 @@
             <div class="float-left">
                 <ul class="nav nav-tabs">
                     {% for href, caption in nav_bar %}
-                        {% if href in admin_pages and 'Admin' in roles or 'Experienced_Researcher' in roles or 'Superadmin' in roles or href not in admin_pages %}
+                        {% if href in logged_in_pages and roles or (href in admin_pages and ('Admin' in roles or 'Experienced_Researcher' in roles or 'Superadmin' in roles)) or (href not in admin_pages and href not in logged_in_pages)%}
                             <li class="nav-item">
-                                <a class="nav-link{% if href == active_page %} active{% endif %}" href="{{ url_for(href) }}">{{ caption|e }}</a>
+                                <a class="nav-link{% if href == active_page %} active{% endif %}"
+                                   href="{{ url_for(href) }}">{{ caption|e }}</a>
                             </li>
-                        {% else  -%}
                         {% endif -%}
                     {% endfor %}
-                    <!-- login_required: member1/2@example.com / Password1)
-                    role_required: admin@example.com / Password1')-->
+
                 </ul>
             </div>
 

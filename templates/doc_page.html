@@ -15,18 +15,48 @@
         <p id="back" class="pl-3 pt-2"><a href="{{ url_for('index') }}">Назад</a></p>
     </div>
 
-    <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
-                                    {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}
-                                {% else %}
-                                    Не указано
-                                {% endif %}
-    </p>
-    <p><b>Дата вынесения решения</b>: {% if doc_dict['decision_date'] %}
-                                    {{ doc_dict['decision_date'].strftime('%d.%m.%Y') }}
-                                {% else %}
-                                    Не указано
-                                {% endif %}
-    </p>
+    <div class="row align-items-end">
+        <div class="col">
+            <p><b>Дата подачи заявления</b>:  {% if doc_dict['create_date'] %}
+                {{ doc_dict['create_date'].strftime('%d.%m.%Y') }}
+                {% else %}
+                Не указано
+                {% endif %}
+            </p>
+            <p><b>Дата вынесения решения</b>: {% if doc_dict['decision_date'] %}
+                {{ doc_dict['decision_date'].strftime('%d.%m.%Y') }}
+                {% else %}
+                Не указано
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="col-auto">
+            <button type="button" class="btn btn-danger mb-3"
+                          data-toggle="modal"
+                          data-target="#delete_doc">Удалить</button>
+        </div>
+
+        <div class="modal fade" id="delete_doc">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Внимание</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        Вы уверены, что хотите удалить этот элемент? Действие нельзя будет отменить, и этот элемент
+                        будет безвозвратно удалён из базы данных.
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-danger mr-2" href="">Удалить</a>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <div class="mb-4">
         <ul class="nav nav-tabs">
