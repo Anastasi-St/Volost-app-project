@@ -2,4 +2,28 @@
 {% set active_page = 'research' %}
 {% block content %}
     <h2>Исследования</h2>
+
+    {% for article in articles %}
+        <div class="card mb-3">
+            <div class="row no-gutters">
+                <div class="col">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <a href="/research/article/{{ article.id }}">
+                                <b>{{ article.title }}</b> // {{ article.source }}
+                            </a>
+                        </h4>
+                        <p class="card-text">
+                            {{ article.preview }}
+                        </p>
+                    </div>
+                </div>
+                <img class="col-auto"
+                     src="static/images/research/{{ article.thumbnail }}"
+                     alt="Вопреки показаниям"
+                     width="50%" height="50%">
+            </div>
+        </div>
+    {% endfor %}
+
 {% endblock %}

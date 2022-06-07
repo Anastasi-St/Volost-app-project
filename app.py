@@ -5,16 +5,12 @@ from config import Config
 from werkzeug.utils import secure_filename
 import datetime
 import os, codecs, re
-from lxml import etree
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+from natasha_stats import count_stats
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import aliased
-#from sqlalchemy import and_
 from flask_user import current_user, login_required, roles_required, UserManager, UserMixin
-#import itertools
 from forms import EditMeta, SearchForm, AddDoc, AddPics, SemanticMarkup
 
 def create_app():
@@ -157,18 +153,17 @@ def create_app():
         ref_element = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False) # переименовала!!
         #ref_book = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.ref_book'), nullable=False)
 
+    class ResearchArticle(db.Model):
+        __tablename__ = 'research_article'
+        id = db.Column(db.Integer(), primary_key=True)
+        title = db.Column(db.String(), nullable=False)
+        source = db.Column(db.String(), nullable=True)
+        preview = db.Column(db.Text(), nullable=True)
+        thumbnail = db.Column(db.String(), nullable=True)
+        article = db.Column(db.String(), nullable=True)
+
     user_manager = UserManager(app, db, User)
     db.create_all()
-
-    #admin = Admin(app)
-
-    #class RefBooksElsView(ModelView):
-    #    column_display_pk = True
-
-    #admin.add_view(ModelView(User, db.session))
-    #admin.add_view(ModelView(Role, db.session))
-    #admin.add_view(RefBooksElsView(RefBooksElements, db.session))
-    #admin.add_view(ModelView(ReferenceBooks, db.session))
 
     def calculate_waiting(doc):
         if doc.decision_date and doc.create_date:
@@ -190,77 +185,6 @@ def create_app():
                 doc_file.filetype = name.split('.')[-1]
                 db.session.add(doc_file)
                 db.session.commit()
-
-    #for doc in Documents.query.all():
-    #    fill_docfiles(doc)
-    #    calculate_waiting(doc)
-
-    #for text in Documents.query.with_entities(Documents.id, Documents.doc_text).all():
-    #    if text.doc_text:
-    #        with codecs.open("doc_texts\\text_"+str(text.id)+".txt", 'w', encoding='windows-1251') as f:
-    #            f.write(text.doc_text)
-
-
-
-#if not User.query.filter(User.email == 'member1@example.com').first():
-    #    user = User(email='member1@example.com',
-    #                email_confirmed_at=datetime.datetime.utcnow(),
-    #                password=user_manager.hash_password('Password1'),
-    #                first_name="Василий",
-    #                last_name="Иванов",)
-    #    user.roles.append(Role(name="Beginner_Researcher"))
-    #    db.session.add(user)
-    #    db.session.commit()
-
-    #if not User.query.filter(User.email == 'member2@example.com').first():
-    #    user = User(email='member2@example.com',
-    #                email_confirmed_at=datetime.datetime.utcnow(),
-    #                password=user_manager.hash_password('Password1'),
-    #                first_name="Иван",
-    #                last_name="Васильев",)
-    #    user.roles.append(Role(name="Experienced_Researcher"))
-    #    db.session.add(user)
-    #    db.session.commit()
-
-        # Create 'admin@example.com' user with 'Admin' and 'Agent' roles
-    #if not User.query.filter(User.email == 'admin@example.com').first():
-    #    user = User(email='admin@example.com',
-    #                email_confirmed_at=datetime.datetime.utcnow(),
-    #                password=user_manager.hash_password('Password1'),
-    #                first_name="Николай",
-    #                last_name="Николаев",)
-    #    user.roles.append(Role(name='Admin'))
-    #    db.session.add(user)
-    #    db.session.commit()
-
-    #def add_themes_punishments():
-    #    doc = Documents(doc_name='test',
-    #                    reg_date=datetime.datetime.utcnow(),)
-    #    doc.theme.append(RefBooksElements.query.filter_by(ref_value='потрава').first())
-    #    doc.court_punishment.append(RefBooksElements.query.filter_by(ref_value='штраф').first())
-    #    db.session.add(doc)
-    #    db.session.commit()
-
-
-    #def get_roles(cur_user):
-    #    roles_list = cur_user.roles
-    #    user_roles = []
-    #    for role in roles_list:
-    #        user_roles.append(Role.query.filter_by(id=role.id).first().name)
-    #    return user_roles
-
-    #def get_text():
-    #    doc = ''
-    #    warning = ''
-    #    if request.method == "GET":
-    #        doc_id = request.args.get('doc_id')
-    #        if doc_id:
-    #            doc_id = int(doc_id)
-    #            doc = Documents.query.filter_by(id=doc_id).first()
-    #            if not doc:
-    #                warning = "Текста с id "+str(doc_id)+" нет в базе данных"
-    #                doc = ''
-    #   return doc, warning
 
     th_names = ['Дата регистрации документа в базе данных', 'Губерния', 'Уезд', 'Волость',
                 'Место жительства истца', 'Место жительства ответчика', 'Дата подачи заявления', 'Дата вынесения решения',
@@ -981,16 +905,35 @@ def create_app():
                                id=id,
                                title="Документ не найден")
 
-
+    wcount, scount = count_stats()
     @app.route('/linguistic_info')
     def linguistic_info():
         return render_template('linguistic_info.html',
+                               wcount=wcount,
+                               scount=scount,
                                title="Взгляд лингвиста")
 
     @app.route('/research')
     def research():
+        articles = ResearchArticle.query.all()
         return render_template('research.html',
-                               title="Исследования")
+                               title="Исследования",
+                               articles=articles)
+    @app.route('/research/article/<int:id>')
+    def article(id):
+        article = ResearchArticle.query.filter_by(id=id).first()
+        if not article:
+            return redirect('/')
+        art_path = 'articles/'+str(id)+'.txt'
+        if os.path.exists(art_path):
+            with codecs.open(art_path, 'r', encoding='windows-1251') as art:
+                article_text = art.read()
+        else:
+            return redirect('/')
+        return render_template('article.html',
+                               title="Исследования",
+                               article=article,
+                               article_text=article_text)
 
     @app.route('/about_project')
     def about_project():
@@ -1052,7 +995,7 @@ def create_app():
 
 
     @app.route('/activity_log')
-    @roles_required(superior_roles)
+    @login_required
     def activity_log():
         actions = ActivityLog.query.with_entities(ActivityLog.id,
                                                   User.first_name.label('user_name'),
@@ -1076,28 +1019,6 @@ def create_app():
                                title="Журнал действий",
                                actions=actions,
                                actions_dct=actions_dct)
-
-    # @app.route('/members')
-    # @login_required
-    # def member_page():
-    #     doc, warning = get_text()
-    #     return render_template('index.html',
-    #                            title="Welcome!",
-    #                            page_type="Members page",
-    #                            user_roles=get_roles(current_user),
-    #                            warning=warning,
-    #                            doc=doc)
-
-    # @app.route('/admin')
-    # @roles_required(['Admin'])
-    # def admin_page():
-    #     doc, warning = get_text()
-    #     return render_template('index.html',
-    #                            title="Welcome!",
-    #                            page_type="Admin page",
-    #                            user_roles=get_roles(current_user),
-    #                            warning=warning,
-    #                            doc=doc)
 
     return app
 
