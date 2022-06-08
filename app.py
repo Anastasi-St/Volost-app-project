@@ -798,7 +798,7 @@ def create_app():
             clean_path = 'clean_texts/clean_text_'+str(id)+'.txt'
             xml_path = 'semant_xml/xml_'+str(id)+'.xml'
             if not os.path.exists(html_path):
-                with codecs.open(clean_path, 'r', encoding='windows-1251') as doc_text:
+                with codecs.open(clean_path, 'r', encoding='utf-8') as doc_text:
                     doc_text = doc_text.read().replace('\n', '<br>')
                     form.text.data = doc_text
             else:
@@ -926,7 +926,7 @@ def create_app():
             return redirect('/')
         art_path = 'articles/'+str(id)+'.txt'
         if os.path.exists(art_path):
-            with codecs.open(art_path, 'r', encoding='windows-1251') as art:
+            with codecs.open(art_path, 'r', encoding='utf-8') as art:
                 article_text = art.read()
         else:
             return redirect('/')
