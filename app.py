@@ -1025,4 +1025,4 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     #app.jinja_env.add_extension('jinja2.ext.do')
-    app.run(server=app)
+    app.run()
