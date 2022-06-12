@@ -50,7 +50,9 @@
                         будет безвозвратно удалён из базы данных.
                     </div>
                     <div class="modal-footer">
-                        <a class="btn btn-danger mr-2" href="">Удалить</a>
+                        <form action="/delete/doc/{{ doc_dict['id'] }}" method="POST">
+                            <button type="submit" class="btn btn-danger mr-2">Удалить</button>
+                        </form>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Закрыть</button>
                     </div>
                 </div>

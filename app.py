@@ -5,7 +5,8 @@ from config import Config
 from werkzeug.utils import secure_filename
 import datetime
 import os, codecs, re
-from natasha_stats import count_stats
+from pathlib import Path
+from natasha_stats import count_stats, clean_text, all_statistics, lemmas, dict_to_json
 from flask_babelex import Babel
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import ENUM
@@ -103,7 +104,6 @@ def create_app():
 
         theme = db.relationship('RefBooksElements', secondary='doc_themes', lazy='dynamic')
         court_punishment =  db.relationship('RefBooksElements', secondary='doc_court_punishments', lazy='dynamic')
-        ref_doc_properties = db.relationship('RefBooksElements', secondary='ref_doc_properties', lazy='dynamic')
 
     class DocThemes(db.Model):
         __tablename__ = 'doc_themes'
@@ -134,9 +134,9 @@ def create_app():
         id =  db.Column(db.Integer(), primary_key=True)
         user = db.Column(db.Integer(), db.ForeignKey('users.id'), nullable=False)
         datetime = db.Column(db.DateTime(), nullable=False)
-        document = db.Column(db.Integer(), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
-        doc_type = db.Column(ENUM('edit_meta', 'edit_text', 'edit_pics', 'add_doc', 'delete_doc',
-                                  name='act_type', create_type=False), nullable=False) # переименовала!!
+        document = db.Column(db.Integer(), nullable=False)#db.ForeignKey('documents.id', ondelete='CASCADE'))
+        doc_type = db.Column(ENUM('edit_meta', 'edit_text', 'edit_pics', 'add_doc', 'delete_doc', 'add_markup', 'edit_markup',
+                                  name='act_type', create_type=True), nullable=False)
 
     class Participants(db.Model):
         __tablename__ = 'participants'
@@ -145,13 +145,6 @@ def create_app():
         partic_type = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)
         partic_kind = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False)
         partic_num = db.Column(db.Integer(), server_default='0')
-
-    class RefDocProperties(db.Model): # RELATIONS!
-        __tablename__ = 'ref_doc_properties'
-        id =  db.Column(db.Integer(), primary_key=True)
-        doc = db.Column(db.Integer(), db.ForeignKey('documents.id'), nullable=False)
-        ref_element = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.id'), nullable=False) # переименовала!!
-        #ref_book = db.Column(db.Integer(), db.ForeignKey('ref_books_elements.ref_book'), nullable=False)
 
     class ResearchArticle(db.Model):
         __tablename__ = 'research_article'
@@ -194,13 +187,12 @@ def create_app():
                 'Сумма присуждённого возмещения в рублях',
                 'Обжаловано', 'Обжалование успешно', 'Дата подачи апелляции', 'Дата решения по апелляции',
                 'Время ожидания решения апелляции, дни', 'Дата исполнения решения', 'Время ожидания решения, дни']
+
     not_displayed = ['id', 'doc_name', 'owner', 'doc_text', 'img_names']
     column_names = [x for x in Documents.__table__.columns.keys() if x not in not_displayed]
     column_names.insert(column_names.index('dec_book_num'), 'themes')
     column_names.insert(column_names.index('compens'), 'court_punishments')
     column_dict = dict(zip(column_names, th_names))
-    #print(column_dict)
-
 
     def get_all_docs():
         plaintiff_res = aliased(RefBooksElements)
@@ -209,9 +201,6 @@ def create_app():
         uyezd = aliased(RefBooksElements)
         volost = aliased(RefBooksElements)
         court_result = aliased(RefBooksElements)
-        #themes = aliased(RefBooksElements)
-
-        #print(Documents.query.with_entities(Documents.id, Documents.doc_name).all())
 
         docs_test = Documents.query.with_entities(Documents.id,
                                                   Documents.doc_name,
@@ -246,12 +235,6 @@ def create_app():
             .join(defendant_res, defendant_res.id == Documents.defendant_res_place, isouter=True)\
             .join(court_result, court_result.id == Documents.court_result, isouter=True)\
             .all()
-            #.join(DocThemes, isouter=True)\
-            #.join(themes, isouter=True)\
-            #.all()
-            #.join(DocThemes, DocThemes.doc_id == Documents.id)\
-            #.join(themes)\
-            #.all()
 
         docs_themes = RefBooksElements.query.with_entities(Documents.id, RefBooksElements.ref_value)\
                          .join(DocThemes, DocThemes.theme_id == RefBooksElements.id)\
@@ -295,9 +278,6 @@ def create_app():
         except TypeError:
             return dict((col, getattr(query_res, col)) for col in query_res.__table__.columns.keys())
 
-    #def query_to_list(query_res):
-    #    return [item[0] for item in query_res]
-
     def ref_elements_list(n):
         query = RefBooksElements.query.with_entities(RefBooksElements.id,
                                                      RefBooksElements.ref_value).filter_by(ref_book=n).all()
@@ -307,6 +287,12 @@ def create_app():
     def intersect(list1, list2):
         intersection = [val for val in list1 if val in list2]
         return intersection
+
+    def update_stats():
+        new_stats = all_statistics()
+        new_lemmas = lemmas()
+        dict_to_json(new_stats, 'statistics')
+        dict_to_json(new_lemmas, 'lemmas')
 
     # Поля для форм
     fields = ['doc_name', 'create_date', 'decision_date', 'dec_book_num',
@@ -321,6 +307,13 @@ def create_app():
     checkboxes_search = ['img_names', 'doc_text']
     diff_fields = ["csrf_token", "doc_name", "submit"]
     waits = ['wait_time', 'ap_dec_time', 'decision_exec_time']
+
+    ranges = ['reg_date_start', 'reg_date_end',
+              'create_date_start', 'create_date_end',
+              'decision_date_start', 'decision_date_end',
+              'decision_exec_date_start', 'decision_exec_date_end',
+              'wait_time_start', 'wait_time_end',
+              'dec_book_num_start', 'dec_book_num_end']
 
     roles_trans = [('#E79C9C', 'Содержание жалобы'),
                    ('#FFC69C', 'Формулировка дела'),
@@ -343,7 +336,6 @@ def create_app():
     @app.route('/', methods=['GET', 'POST'])
     def index():
         docs, docs_themes, docs_punishments = get_all_docs()
-        #docs_list = [dict((col, getattr(doc, col)) for col in doc.__table__.columns.keys()) for doc in docs]
         all_docs = Documents.query.all()
         docs_list = query_to_dict(docs)
         docs_themes, docs_punishments = get_themes_puns()
@@ -370,11 +362,12 @@ def create_app():
                                 val.append((True, field.data))
                             else:
                                 val.append((False, field.data))
+                        elif field.name in ranges:
+                            continue
                         else:
                             val.append((getattr(doc, field.name), field.data))
                     values.append(val)
                 for el in values:
-                    temp_list = []
                     count1 = 0
                     count2 = 0
                     for doc_val, form_val in el[1:]:
@@ -384,13 +377,12 @@ def create_app():
                                 or (type(doc_val) == int and doc_val in form_val) \
                                 or (doc_val == True and form_val == doc_val):
                                     count2 += 1
-                    #print(count1, count2)
                     if count1 == count2:
                         id_list.append(el[0])
 
                 new_docs_list = [doc for doc in docs_list if doc['id'] in id_list ]
-                #print(id_list)
                 return new_docs_list
+
             if len(list(request.form.to_dict().keys())) > 2:
                 docs_list = select_docs(all_docs, form)
         else:
@@ -401,6 +393,7 @@ def create_app():
                 if field.name in choices:
                     ch = ref_elements_list(choices[field.name])
                     field.choices = ch
+
 
         set_search_form(form)
 
@@ -414,6 +407,7 @@ def create_app():
                                checkboxes_search=checkboxes_search,
                                dates=dates,
                                waits=waits,
+                               ranges=ranges,
                                form=form)
 
     @app.route('/<int:id>', methods=['GET', 'POST'])
@@ -435,32 +429,35 @@ def create_app():
 
             if 'editordata' in request.form:
                 new_doc_text = request.form.get('editordata')
-                #print(new_doc_text)
-                doc.doc_text = new_doc_text
-                new_action = ActivityLog(user=current_user.id,
-                                         datetime=datetime.datetime.now(),
-                                         document=doc.id,
-                                         doc_type='edit_text')
-                db.session.add(new_action)
-                db.session.commit()
+                if new_doc_text != doc.doc_text:
+                    doc.doc_text = new_doc_text
+
+                    new_action = ActivityLog(user=current_user.id,
+                                             datetime=datetime.datetime.now(),
+                                             document=doc.id,
+                                             doc_type='edit_text')
+                    db.session.add(new_action)
+                    db.session.commit()
+
+                    with codecs.open('clean_texts/clean_text_'+str(doc.id)+'.txt', 'w', encoding='utf-8') as new_text:
+                        text = clean_text(new_doc_text)
+                        new_text.write(text)
+
+                    update_stats()
 
             elif 'doc_name' in request.form:
                 form = EditMeta(request.form)
 
-                #if form.validate():
                 for field in form:
                     if field.name not in diff_fields:
                         if type(field.data) != list:
                             if getattr(doc, field.name) == field.data:
                                 continue
                             else:
-                                #print('вместо', str(getattr(doc, field.name)), '—', field.name+' —   '+str(field.data))
                                 setattr(doc, field.name, field.data)
                         else:
                             ids = [el.id for el in getattr(doc, field.name)]
-                            #print('айдис —', field.name, ids)
                             if field.data == ids:
-                                #print('ничего не поменялось')
                                 continue
                             else:
                                 for idd in ids:
@@ -469,8 +466,6 @@ def create_app():
                                     else:
                                         el = RefBooksElements.query.filter_by(id=idd).first()
                                         getattr(doc, field.name).remove(el)
-                                        #db.session.commit()
-                                        #print('удалили', field.name, el)
 
                                 for idd in field.data:
                                     if idd in ids:
@@ -479,8 +474,7 @@ def create_app():
                                         el = RefBooksElements.query.filter_by(id=idd).first()
                                         getattr(doc, field.name).append(el)
                                         db.session.merge(doc)
-                                        #db.session.commit()
-                                        #print('добавили', field.name, el)
+
                 new_action = ActivityLog(user=current_user.id,
                                          datetime=datetime.datetime.now(),
                                          document=doc.id,
@@ -607,7 +601,7 @@ def create_app():
                         setattr(getattr(form, field.name), 'data', False)
         set_form_choices(form)
 
-        if request.method == "POST": # and form.validate_on_submit():
+        if request.method == "POST":
             images = os.listdir('static/images/doc_images')
             doc_form = AddDoc(request.form)
 
@@ -652,7 +646,6 @@ def create_app():
                             else:
                                 filename = secure_filename(file.filename)
                                 if file.filename not in images:
-                                    #print(filename, 'saved')
                                     file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
 
                                 new_file = DocumentsFiles()
@@ -669,9 +662,6 @@ def create_app():
                     else:
                         setattr(new_doc, field.name, None)
 
-            #db.session.add(new_doc)
-            #db.session.commit()
-
             new_action = ActivityLog(user=current_user.id,
                                      datetime=datetime.datetime.now(),
                                      document=new_doc.id,
@@ -679,6 +669,13 @@ def create_app():
 
             db.session.add(new_action)
             db.session.commit()
+
+            with codecs.open('clean_texts/clean_text_'+str(new_doc.id)+'.txt', 'w', encoding='utf-8') as new_text:
+                if new_doc.doc_text:
+                    text = clean_text(new_doc.doc_text)
+                    new_text.write(text)
+
+            update_stats()
 
             return redirect('/'+str(new_doc.id))
 
@@ -695,7 +692,7 @@ def create_app():
     @roles_required()
     def edit_pics(id):
         doc_files = DocumentsFiles.query\
-            .with_entities(DocumentsFiles.document, DocumentsFiles.filename)\
+            .with_entities(DocumentsFiles.id, DocumentsFiles.document, DocumentsFiles.filename)\
             .filter_by(document=id).all()
         doc = Documents.query.filter_by(id=id).first()
         if not doc:
@@ -707,11 +704,12 @@ def create_app():
         if doc.owner == current_user.id or roles.issubset(set(superior_roles)):
 
             if request.method == 'POST':
+
                 form = AddPics(request.form)
 
                 if 'imgs' in request.files:
                     files = request.files.getlist('imgs')
-                    #print(files)
+
                     for file in files:
                         if len(files) == 1 and file.filename == '':
                             flash("Вы не выбрали ни один файл", 'warning')
@@ -742,18 +740,25 @@ def create_app():
                 files = request.files.getlist('imgs')
                 for file in files:
                     filename = secure_filename(file.filename)
-                    #if file.filename not in images:
-                        #file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
+                    if file.filename not in images:
+                        file.save(os.path.join(Config.UPLOAD_FOLDER, filename))
                     new_file = DocumentsFiles(filename=filename,
                                               load_date=datetime.datetime.now(),
                                               document=doc.id,
                                               filetype=filename.split('.')[-1])
-                    #print(new_file.filename, new_file.load_date, new_file.document, new_file.filetype)
-                    #db.session.add(new_file)
-                #print(doc.img_names)
+                    db.session.add(new_file)
                 doc.img_names += ', '+', '.join([file.filename for file in files])
-                #print(doc.img_names)
-                #db.session.commit()
+
+                new_action = ActivityLog(user=current_user.id,
+                                         datetime=datetime.datetime.now(),
+                                         document=doc.id,
+                                         doc_type='edit_pics')
+                db.session.add(new_action)
+                db.session.commit()
+
+                doc_files = DocumentsFiles.query \
+                    .with_entities(DocumentsFiles.id, DocumentsFiles.document, DocumentsFiles.filename) \
+                    .filter_by(document=id).all()
         else:
             return redirect('/access_error/'+str(id))
 
@@ -833,6 +838,13 @@ def create_app():
                         #to_xml = etree.fromstring(html_to_xml(text).encode('utf-8'))
                         #pretty_xml = etree.tostring(to_xml, pretty_print=True).decode('utf-8')
                         xml.write(html_to_xml(text))
+
+                    new_action = ActivityLog(user=current_user.id,
+                                             datetime=datetime.datetime.now(),
+                                             document=doc.id,
+                                             doc_type='add_markup')
+                    db.session.add(new_action)
+                    db.session.commit()
                 else:
                     with codecs.open(html_path, 'r+', encoding='utf-8') as html:
                         html_text = html.read()
@@ -843,14 +855,68 @@ def create_app():
                                 #to_xml = etree.fromstring(html_to_xml(text).encode('utf-8'))
                                 #pretty_xml = etree.tostring(to_xml, pretty_print=True).decode('utf-8')
                                 xml.write(html_to_xml(text))
+
+                            new_action = ActivityLog(user=current_user.id,
+                                                     datetime=datetime.datetime.now(),
+                                                     document=doc.id,
+                                                     doc_type='edit_markup')
+                            db.session.add(new_action)
+                            db.session.commit()
+
                 return redirect('/'+str(id))
         else:
             return redirect('/access_error/'+str(id))
+
         return render_template('semantic_markup.html',
                                title=doc.doc_name,
                                doc=doc,
                                form=form,
                                roles_trans=roles_trans)
+
+    @app.route('/delete/doc/<int:id>', methods=['POST'])
+    def delete_doc(id):
+        if request.method == 'POST':
+            doc = Documents.query.filter_by(id=id).first()
+            db.session.delete(doc)
+
+            doc_path = 'clean_texts/clean_text_'+str(id)+'.txt'
+
+            if doc.img_names:
+                imgs_path = [Config.UPLOAD_FOLDER+img_file for img_file in doc.img_names.split(', ')]
+                for img in imgs_path:
+                    if os.path.exists(img):
+                        os.remove(img)
+
+            if os.path.exists(doc_path):
+                os.remove(doc_path)
+
+            new_action = ActivityLog(user=current_user.id,
+                                     datetime=datetime.datetime.now(),
+                                     document=id,
+                                     doc_type='delete_doc')
+            db.session.add(new_action)
+            db.session.commit()
+            return redirect('/')
+
+    @app.route('/delete/img/<int:id>', methods=['POST'])
+    def delete_img(id):
+        if request.method == 'POST':
+            img = DocumentsFiles.query.filter_by(id=id).first()
+            doc = Documents.query.filter_by(id=img.document).first()
+
+            if os.path.exists(Config.UPLOAD_FOLDER+img.filename):
+                os.remove(Config.UPLOAD_FOLDER+img.filename)
+
+            db.session.delete(img)
+            db.session.commit()
+
+            doc_imgs = DocumentsFiles.query.filter_by(document=img.document).all()
+            filenames = [doc_img.filename for doc_img in doc_imgs]
+            doc.img_names = ', '.join(filenames)
+
+            db.session.commit()
+
+            return redirect('/pics/'+str(img.document))
 
     @app.route('/<int:id>/sem')
     def sem(id):
@@ -919,6 +985,7 @@ def create_app():
         return render_template('research.html',
                                title="Исследования",
                                articles=articles)
+
     @app.route('/research/article/<int:id>')
     def article(id):
         article = ResearchArticle.query.filter_by(id=id).first()
@@ -956,14 +1023,20 @@ def create_app():
         if not ref_book:
             return redirect('/no_book/'+str(id))
         if request.method == 'POST':
-            for field in request.form:
-                field_data = request.form.get(field)
-                el_id = int(field)
-                ref_el = RefBooksElements.query.filter_by(id=el_id).first()
-                if ref_el.ref_value == field_data:
-                    continue
-                else:
-                    ref_el.ref_value = field_data
+            if 'delete' in request.form:
+                el_id = int(request.form.get('delete'))
+                element = RefBooksElements.query.filter_by(id=el_id).first()
+                db.session.delete(element)
+            else:
+                for field in request.form:
+                    field_data = request.form.get(field)
+                    el_id = int(field)
+                    ref_el = RefBooksElements.query.filter_by(id=el_id).first()
+                    if ref_el.ref_value == field_data:
+                        continue
+                    else:
+                        ref_el.ref_value = field_data
+            ref_book = RefBooksElements.query.filter_by(ref_book=id).all()
             db.session.commit()
         return render_template('ref_book_edit.html',
                                title="Управление справочниками — "+ref_book_name.ref_name,
@@ -979,6 +1052,8 @@ def create_app():
         if request.method == 'POST':
             new_ref_el = RefBooksElements()
             new_ref_el.ref_value = request.form.get('ref_value')
+            new_ref_el.ref_book = id
+            new_ref_el.ref_date = datetime.datetime.now()
             db.session.add(new_ref_el)
             db.session.commit()
 
@@ -993,7 +1068,6 @@ def create_app():
                                title="Справочник не найден",
                                id=id)
 
-
     @app.route('/activity_log')
     @login_required
     def activity_log():
@@ -1001,20 +1075,23 @@ def create_app():
                                                   User.first_name.label('user_name'),
                                                   User.last_name.label('user_lastname'),
                                                   Documents.doc_name.label('document_name'),
-                                                  Documents.id.label('document_id'),
+                                                  #Documents.id.label('document_id'),
+                                                  ActivityLog.document,
                                                   ActivityLog.datetime,
                                                   ActivityLog.doc_type
                                                   )\
-        .join(User, User.id == ActivityLog.user)\
-        .join(Documents, Documents.id == ActivityLog.document)\
+        .join(User, User.id == ActivityLog.user, isouter=True) \
+        .join(Documents, Documents.id == ActivityLog.document, isouter=True) \
         .all()
-        #actions = [query_to_dict(action) for action in actions]
-        #print(actions)
+
         actions_dct = {'edit_meta': 'Редактирование метаданных',
                        'edit_text': 'Редактирование текста',
                        'edit_pics': 'Редактирование изображений',
                        'add_doc': 'Добавление нового документа',
-                       'delete_doc': 'Удаление документа'}
+                       'delete_doc': 'Удаление документа',
+                       'add_markup': 'Добавление семантической разметки',
+                       'edit_markup': 'Редактирование семантической разметки'}
+
         return render_template('activity_log.html',
                                title="Журнал действий",
                                actions=actions,

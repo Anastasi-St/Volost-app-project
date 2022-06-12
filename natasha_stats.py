@@ -82,6 +82,8 @@ def clean_files():
 
 def all_statistics():
     stats = {}
+    clean_dir = 'clean_texts'
+    clean_pathlist = Path(clean_dir).rglob('clean_text_[0-9]*.txt')
     for path in clean_pathlist:
         with codecs.open(str(path), 'r', encoding='utf-8') as f:
             text = f.read()
@@ -96,6 +98,7 @@ val_pos = ['NOUN', 'PROPN', 'ADJ', 'AUX', 'VERB', 'PRON']
 words = [ "AUX", "DET", "SCONJ", "ADV", "PART", "PRON", "CCONJ", "NUM", "ADJ", "ADP", "VERB", "PROPN", "NOUN"]
 
 def lemmas_dist(text, stats):
+    val_pos = ['NOUN', 'PROPN', 'ADJ', 'AUX', 'VERB', 'PRON']
     doc = Doc(text)
     doc.segment(segmenter)
     doc.tag_morph(morph_tagger)
@@ -111,6 +114,8 @@ def lemmas_dist(text, stats):
 
 def lemmas():
     stats = {}
+    clean_dir = 'clean_texts'
+    clean_pathlist = Path(clean_dir).rglob('clean_text_[0-9]*.txt')
     for path in clean_pathlist:
         with codecs.open(str(path), 'r', encoding='utf-8') as f:
             text = f.read()
@@ -121,9 +126,11 @@ def lemmas():
             short_stats[tok] = stats[tok]
     short_stats = {k: v for k, v in sorted(short_stats.items(), key=lambda item: item[1])}
     short_stats['lem'] = "Леммы"
+
     return short_stats
 
 def general_stats(text, wcount, scount):
+    words = [ "AUX", "DET", "SCONJ", "ADV", "PART", "PRON", "CCONJ", "NUM", "ADJ", "ADP", "VERB", "PROPN", "NOUN"]
     doc = Doc(text)
     doc.segment(segmenter)
     doc.tag_morph(morph_tagger)
@@ -196,11 +203,11 @@ def pos_words(text):
             stats[token.pos] = [token.text]
     return stats
 
-# print(pos_words(text_47))
+stats = lemmas()
 
 def dict_to_json(dct, name):
     with codecs.open('static/js/'+name+'.json', 'w', encoding="utf-8") as f:
         json.dump(dct, f, indent=4)
 
-#dict_to_json(stats, 'lemmas')
+dict_to_json(stats, 'lemmas')
 

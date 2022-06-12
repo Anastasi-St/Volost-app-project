@@ -32,7 +32,10 @@
                             будет удалён из всех документов, в которых фигурирует.
                         </div>
                         <div class="modal-footer">
-                            <a class="btn btn-danger mr-2" href="">Удалить</a>
+                            <button type="submit" id="del_{{ element.id }}"
+                                    name="delete"
+                                    class="btn btn-danger mr-2"
+                                    value="{{ element.id }}">Удалить</button>
                             <button type="button" class="btn btn-primary" data-dismiss="modal">Закрыть</button>
                         </div>
                     </div>

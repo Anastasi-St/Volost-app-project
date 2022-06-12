@@ -18,7 +18,13 @@
             <tr>
                 <td class="text-center align-middle">{{ loop.index }}</td>
                 <td>{{ action.user_name }} {{action.user_lastname}}</td>
-                <td><a href="/{{ action.document_id }}">{{ action.document_name }}</a></td>
+                <td><a href="/{{ action.document }}">
+                    {% if action.document_name %}
+                        {{ action.document_name }}
+                    {% else %}
+                        Документ {{ action.document }}
+                    {% endif %}
+                </a></td>
                 <td>{{ actions_dct[action.doc_type] }}</td>
                 <td>{{ action.datetime.strftime('%d.%m.%Y, %H:%M:%S') }}</td>
             </tr>

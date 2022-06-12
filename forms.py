@@ -70,29 +70,53 @@ class AddDoc(FlaskForm):
     add_submit = SubmitField("Добавить документ")
 
 class SearchForm(FlaskForm):
-    #reg_date
+    reg_date_start = DateField("Время регистрации документа:")
+    reg_date_end = DateField("")
+
     guberniya = SelectMultipleField("Губерния: ", coerce=int)
     uyezd = SelectMultipleField("Уезд: ", coerce=int)
     volost = SelectMultipleField("Волость: ", coerce=int)
     plaintiff_res_place = SelectMultipleField("Место жительства истца: ", coerce=int)
     defendant_res_place = SelectMultipleField("Место жительства ответчика: ", coerce=int)
-    #create_date
-    #decision_date
-    #wait_time
+
+    create_date_start = DateField("Дата подачи заявления:")
+    create_date_end = DateField("")
+
+    decision_date_start = DateField("Дата вынесения решения:")
+    decision_date_end = DateField("")
+
+    wait_time_start = IntegerField("Ожидание решения (в днях): ")
+    wait_time_end = IntegerField("")
+
     theme = SelectMultipleField("Темы: ", coerce=int)
-    #dec_book_num
+
+    #dec_book_num_start = IntegerField("Номер по книге решений: ")
+    #dec_book_num_end = IntegerField("")
+
     presence_plaintiff = BooleanField("Присутствие истцов: ", false_values=(False,))
     presence_defendant = BooleanField("Присутствие ответчиков: ", false_values=(False,))
-    #lawsuit_price
+
+    #lawsuit_price_start = DecimalField("Цена предъявленного иска в рублях: ")
+    #lawsuit_price_end = DecimalField("")
+
     court_result = SelectMultipleField("Результат суда: ", coerce=int)
     court_punishment = SelectMultipleField("Наказания по суду: ", coerce=int)
-    #compens
+
+    #compens_start = DecimalField("Сумма присуждённого возмещения в рублях: ")
+    #compens_end = DecimalField("")
+
     appeal = BooleanField("Обжалование: ", false_values=(False,))
     appeal_succ = BooleanField("Успешность обжалования: ", false_values=(False,))
-    #appeal_date
-    #ap_decision_date
-    #decision_exec_date
-    #wait_time
+
+    #appeal_date_start = DateField("Дата подачи апелляции: ")
+    #appeal_date_end = DateField("")
+
+    #ap_decision_date_start = DateField("Дата решения апелляции: ")
+    #ap_decision_date_end = DateField("")
+
+    decision_exec_date_start = DateField("Дата исполнения решения: ")
+    decision_exec_date_end = DateField("")
+
     doc_text = BooleanField("Наличие текста: ", false_values=(False,))
     img_names = BooleanField("Наличие изображений: ", false_values=(False,))
 
