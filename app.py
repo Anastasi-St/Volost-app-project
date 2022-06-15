@@ -824,8 +824,8 @@ def create_app():
                         new_text = '<?xml version="1.0" encoding="UTF-8"?><document><text>'+new_text+'</text></document>'
                         new_text = new_text.replace('<br>', '') #&#xA;
                         new_text = new_text.replace('&nbsp;', '&#xA0;')
-                        new_text = re.sub(r'(</semantic>|<text>)(.*?)<', r'\g<1><plain_text>'+r'\g<2>'+'</plain_text><', new_text)
-                        new_text = new_text.replace('<plain_text></plain_text>', '')
+                        new_text = re.sub(r'(</semantic>|<text>)(.*?\n*.*?\n*)<', r'\g<1><plain_text>'+r'\g<2>'+'</plain_text><', new_text)
+                        new_text = re.sub(r'<plain_text>( *)</plain_text>', '', new_text)
                     else:
                         new_text = '<?xml version="1.0" encoding="UTF-8"?><document><text><plain_text>'+html_txt+'</plain_text></text></document>'
                         new_text = new_text.replace('<br>', '') #&#xA;
