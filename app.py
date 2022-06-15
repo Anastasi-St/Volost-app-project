@@ -398,7 +398,7 @@ def create_app():
         set_search_form(form)
 
         return render_template('index.html',
-                               title="Добро пожаловать!",
+                               title="У волостного — Добро пожаловать!",
                                column_dict=column_dict,
                                docs_list=docs_list,
                                choices=choices,
@@ -821,13 +821,13 @@ def create_app():
                         for col, val in color_roles:
                             new_text = new_text.replace('style="background-color: '+col+';"', 'type="'+val+'"')
                         new_text = new_text.replace('span', 'semantic')
-                        new_text = '<?xml version="1.0" encoding="UTF-8"?><text>'+new_text+'</text>'
+                        new_text = '<?xml version="1.0" encoding="UTF-8"?><document><text>'+new_text+'</text></document>'
                         new_text = new_text.replace('<br>', '') #&#xA;
                         new_text = new_text.replace('&nbsp;', '&#xA0;')
                         new_text = re.sub(r'(</semantic>|<text>)(.*?)<', r'\g<1><plain_text>'+r'\g<2>'+'</plain_text><', new_text)
                         new_text = new_text.replace('<plain_text></plain_text>', '')
                     else:
-                        new_text = '<?xml version="1.0" encoding="UTF-8"?><text><plain_text>'+html_txt+'</plain_text></text>'
+                        new_text = '<?xml version="1.0" encoding="UTF-8"?><document><text><plain_text>'+html_txt+'</plain_text></text></document>'
                         new_text = new_text.replace('<br>', '') #&#xA;
                     return new_text
 
